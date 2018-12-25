@@ -89,7 +89,7 @@ int main(int, char**)
                 // divide by 2^10 (bitshift 10) to avoid int overflows
                 int diff = ((max(max(c.red, c.green), c.blue) - min(min(c.red, c.green), c.blue)) >> 10) + 1;
                 // and also favor light ones over dark ones
-                int lightness = (c.red + c.green + c.blue) >> 10;
+                int lightness = max(max(c.red, c.green), c.blue) >> 10;
                 int weight = diff + lightness;
                 normalizer += weight;
                 r_line += c.red * weight;
