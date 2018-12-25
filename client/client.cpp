@@ -1,13 +1,47 @@
 #include <iostream>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <time.h>
 #include <unistd.h>
 
 // many thanks to:
 // https://stackoverflow.com/questions/53688777/how-to-implement-x11return-colour-of-a-screen-pixel-c-code-for-luajits-ffi
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
+// https://kukuruku.co/post/a-cheat-sheet-for-http-libraries-in-c/
+// https://stackoverflow.com/questions/9786150/save-curl-content-result-into-a-string-in-c
+#include <curl/curl.h>
+
+// https://stackoverflow.com/questions/10820377/c-format-char-array-like-printf
 
 using namespace std;
+
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+void sendcolor(int r, int g, int b)
+{
+    CURL *curl;
+    CURLcode res;
+    std::string readBuffer;
+
+    curl = curl_easy_init();
+    if(curl)
+    {
+        char url[100]; // change to 32 once working
+        sprintf(url, "192.168.2.110:8000?r=%d&g=%d&b=%d", r, g, b);
+        cout << url << "\n";
+
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        std::cout << readBuffer << std::endl;
+    }
+}
 
 int main(int, char**)
 {
@@ -53,7 +87,11 @@ int main(int, char**)
         r = r*255/max_val;
         g = g*255/max_val;
         b = b*255/max_val;
-        cout << "r: " << r << " g: " << g << " b: " << b << "\n";
+
+        // send to the server for display
+        sendcolor(r, g, b);
+
+        // free up memory to prevent leak
         XFree(image);
 
         // 1000000 is one second
