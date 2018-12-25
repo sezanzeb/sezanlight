@@ -78,7 +78,7 @@ int main(int, char**)
             int normalizer = 0;
             
             image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, XYPixmap);
-            cout << height/(lines+1)*i << "\n";
+            
             for(int x = 0;x < width; x+=width/150)
             {
                 c.pixel = XGetPixel(image, x, 0);
@@ -124,7 +124,7 @@ int main(int, char**)
         g = g/normalizer/256;
         b = b/normalizer/300;*/
 
-        cout << r << " " << g << " " << b << "\n";
+        // cout << r << " " << g << " " << b << "\n";
 
         // send to the server for display
         sendcolor(r, g, b);

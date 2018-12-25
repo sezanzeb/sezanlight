@@ -14,7 +14,7 @@ sudo pacman -S curl
 
 your htpc/pc/laptop running X11 and on which you watch youtube, netflix, amazon, etc., play games
 
-`cd client && make`
+`cd client && make && ./client.o`
 
 # server
 

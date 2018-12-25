@@ -18,8 +18,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         global r, g, b
 
-        print('received get')
-
         url = self.path # /?r=128&g=128&b=128
         color_strings = re.split('[^\d]+', url)[1:]
 
@@ -53,7 +51,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         print(r, g, b)
 
         # send ok
-        self.wfile.write(b'1')
+        # makes no sense until I actually deal with various exception cases
+        # self.wfile.write(b'1')
 
 
 httpd = HTTPServer(('192.168.2.110', 8000), SimpleHTTPRequestHandler)
