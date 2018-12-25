@@ -39,6 +39,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             pi.set_PWM_dutycycle(24, b_fade)
             time.sleep(1/60)
 
+        r = r_new
+        g = g_new
+        b = b_new
+
         pi.set_PWM_dutycycle(17, r)
         pi.set_PWM_dutycycle(22, g)
         pi.set_PWM_dutycycle(24, b)

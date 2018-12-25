@@ -2,3 +2,6 @@ raspberry_ip=192.168.2.110
 raspberry_port=8000
 source_width=1920
 source_height=1080
+gpio_r=17
+gpio_g=22
+gpio_b=24

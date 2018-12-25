@@ -66,29 +66,65 @@ int main(int, char**)
         int g = 1;
         int b = 1;
 
+        int lines = 3;
+
         // count three lines on the screen or something
-        for(int i = 1;i < 3;i++)
+        for(int i = 1;i <= lines;i++)
         {
-            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/3*i, width, 1, AllPlanes, XYPixmap);
-            for(int x = 0;x < width; x+=width/100)
+            // to prevent overflows, aggregate color for each line individually
+            int r_line = 0;
+            int g_line = 0;
+            int b_line = 0;
+            int normalizer = 0;
+            
+            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, XYPixmap);
+            cout << height/(lines+1)*i << "\n";
+            for(int x = 0;x < width; x+=width/150)
             {
                 c.pixel = XGetPixel(image, x, 0);
                 XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
-                r += c.red;
-                g += c.green;
-                b += c.blue;
+                // give saturated colors (like green, purple, blue, orange, ...) more weight
+                // over grey colors
+                // difference between lowest and highest value should do the trick already
+                // divide by 2^10 (bitshift 10) to avoid int overflows
+                int diff = ((max(max(c.red, c.green), c.blue) - min(min(c.red, c.green), c.blue)) >> 10) + 1;
+                // and also favor light ones over dark ones
+                int lightness = (c.red + c.green + c.blue) >> 10;
+                int weight = diff + lightness;
+                normalizer += weight;
+                r_line += c.red * weight;
+                g_line += c.green * weight;
+                b_line += c.blue * weight;
+                // cout << "d:" << diff << " l:" << lightness << " w:" << weight << " r:" << r << " g:" << g << " b:" << b << "\n";
             }
+
+            r += r_line / normalizer;
+            g += g_line / normalizer;
+            b += b_line / normalizer;
+
         }
 
-        // normalize it so that the lightest value is 255 and the darkest 0
+        // make the darkest color even darker
+        // to increase saturation
         int min_val = min(min(r, g), b);
-        r -= min_val;
-        g -= min_val;
-        b -= min_val;
+        r -= min_val >> 2;
+        g -= min_val >> 2;
+        b -= min_val >> 2;
+
+        // normalize it so that the lightest value is 255
+        // the leds are quite cold, so make the color warm
         int max_val = max(max(r, g), b);
         r = r*255/max_val;
-        g = g*255/max_val;
-        b = b*255/max_val;
+        g = g*200/max_val;
+        b = b*150/max_val;
+
+        // i feel like the leds are quite cold
+        // so instead of 256, i divide b by 300
+        /*r = r/normalizer/256;
+        g = g/normalizer/256;
+        b = b/normalizer/300;*/
+
+        cout << r << " " << g << " " << b << "\n";
 
         // send to the server for display
         sendcolor(r, g, b);

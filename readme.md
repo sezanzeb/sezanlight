@@ -14,12 +14,6 @@ sudo pacman -S curl
 
 your htpc/pc/laptop running X11 and on which you watch youtube, netflix, amazon, etc., play games
 
-TODO:
-
-add setup file to add ip of raspberry
-
-send data to server
-
 `cd client && make`
 
 # server
@@ -33,8 +27,11 @@ sudo pigpiod
 python server/server.py
 ```
 
-TODO:
+# todo
 
-not yet implemented
+make config file work
 
-add config file for which gpio pins should be used
+see what this xshmgetimage stuff is and if it is faster if it does something similar:
+- https://stackoverflow.com/questions/43442675/how-to-use-xshmgetimage-and-xshmputimage 
+- https://stackoverflow.com/questions/30200689/perfomance-of-xgetimage-xputimage-vs-xcopyarea-vs-xshmgetimage-xshmputima
+
