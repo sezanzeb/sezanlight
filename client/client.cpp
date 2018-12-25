@@ -45,10 +45,6 @@ void sendcolor(int r, int g, int b)
 
 int main(int, char**)
 {
-    int iter1 = 1000;
-    int iter2 = 20;
-    int y = 500;
-
     int width = 1920;
     int height = 1080;
 
@@ -57,7 +53,7 @@ int main(int, char**)
 
     XImage *image;
 
-    for(int i = 0;i < iter1; i++)
+    while(1)
     {
         // XGetImage seems to be rather slow
         // but it's the fastest solution i have come across
@@ -66,23 +62,29 @@ int main(int, char**)
         // asking for lines also makes it quite flexible in where to place lines for color checks.
         // Asking for the whole screen is slow again.
 
-        image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, y, 1920, 1, AllPlanes, XYPixmap);
-        int r = 0;
-        int g = 0;
-        int b = 0;
-        for(int x = 0;x < width; x+=width/10)
+        int r = 1;
+        int g = 1;
+        int b = 1;
+
+        // count three lines on the screen or something
+        for(int i = 1;i < 3;i++)
         {
-            c.pixel = XGetPixel(image, x, 0);
-            XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
-            r += c.red;
-            g += c.green;
-            b += c.blue;
+            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/3*i, width, 1, AllPlanes, XYPixmap);
+            for(int x = 0;x < width; x+=width/100)
+            {
+                c.pixel = XGetPixel(image, x, 0);
+                XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
+                r += c.red;
+                g += c.green;
+                b += c.blue;
+            }
         }
-        // average color
-        r = (float)r/iter2;
-        g = (float)g/iter2;
-        b = (float)b/iter2;
-        // normalize it so that the lightest value is 255
+
+        // normalize it so that the lightest value is 255 and the darkest 0
+        int min_val = min(min(r, g), b);
+        r -= min_val;
+        g -= min_val;
+        b -= min_val;
         int max_val = max(max(r, g), b);
         r = r*255/max_val;
         g = g*255/max_val;
@@ -99,7 +101,7 @@ int main(int, char**)
         // don't only look for the server executable in your cpu usage,
         // also look for /usr/lib/Xorg cpu usage
         // 4 checks per second keeps it at 3% on my i5
-        usleep(1000000/4);
+        usleep(1000000/1);
     }
 
     return 0;
