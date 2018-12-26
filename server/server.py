@@ -7,11 +7,16 @@ import time
 
 pi = pigpio.pi()
 
-fading = False
-
 r = 0
 g = 0
 b = 0
+
+checks_per_second = 1
+gpio_r = 17
+gpio_g = 22
+gpio_b = 24
+raspberry_ip = '192.168.2.110'
+raspberry_port = 8000
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
@@ -27,23 +32,25 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # smoothly fade. after 1 second this loop should be ended,
         # therefore i end after 59/60th of a second
-        for i in range(59):
-            f = i/59
+        checks = int(60/checks_per_second)-1
+
+        for i in range(checks):
+            f = i/checks
             r_fade = int(r*(1-f) + r_new*(f))
             g_fade = int(g*(1-f) + g_new*(f))
             b_fade = int(b*(1-f) + b_new*(f))
             pi.set_PWM_dutycycle(17, r_fade)
             pi.set_PWM_dutycycle(22, g_fade)
             pi.set_PWM_dutycycle(24, b_fade)
-            time.sleep(1/60)
+            time.sleep(1/(checks+1))
 
         r = r_new
         g = g_new
         b = b_new
 
-        pi.set_PWM_dutycycle(17, r)
-        pi.set_PWM_dutycycle(22, g)
-        pi.set_PWM_dutycycle(24, b)
+        pi.set_PWM_dutycycle(gpio_r, r)
+        pi.set_PWM_dutycycle(gpio_g, g)
+        pi.set_PWM_dutycycle(gpio_b, b)
 
         self.send_response(200)
         self.end_headers()
@@ -54,6 +61,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # makes no sense until I actually deal with various exception cases
         # self.wfile.write(b'1')
 
-
-httpd = HTTPServer(('192.168.2.110', 8000), SimpleHTTPRequestHandler)
+print('listening on', raspberry_ip + ':' + str(raspberry_port))
+httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
 httpd.serve_forever()

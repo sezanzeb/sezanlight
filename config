@@ -1,7 +1,17 @@
+# for both server and client:
 raspberry_ip=192.168.2.110
 raspberry_port=8000
+checks_per_second=1
+
+# client:
 source_width=1920
 source_height=1080
+increase_saturation=True
+normalize=True
+lines=3
+columns=50
+
+# raspberry server:
 gpio_r=17
 gpio_g=22
 gpio_b=24

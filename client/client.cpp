@@ -16,37 +16,45 @@ using namespace std;
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    ((string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-void sendcolor(int r, int g, int b)
+void sendcolor(int r, int g, int b, string adress)
 {
     CURL *curl;
     CURLcode res;
-    std::string readBuffer;
+    string readBuffer;
 
     curl = curl_easy_init();
     if(curl)
     {
-        char url[100]; // change to 32 once working
-        sprintf(url, "192.168.2.110:8000?r=%d&g=%d&b=%d", r, g, b);
-        cout << url << "\n";
+        char url[100];
+        sprintf(url, "%s?r=%d&g=%d&b=%d", adress, r, g, b);
+        cout << "sending GET pramas: " << url << "\n";
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        // curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
 
-        std::cout << readBuffer << std::endl;
+        // cout << readBuffer << endl;
     }
 }
 
 int main(int, char**)
 {
+    // configuration
     int width = 1920;
     int height = 1080;
+    bool normalize = true;
+    bool increase_saturation = true;
+    int checks_per_second = 1;
+    int columns = 50;
+    int lines = 3;
+    string raspberry_ip = "192.168.2.110";
+    string raspberry_port = "8000";
 
     XColor c;
     Display *d = XOpenDisplay((char *) NULL);
@@ -66,8 +74,6 @@ int main(int, char**)
         int g = 1;
         int b = 1;
 
-        int lines = 3;
-
         // count three lines on the screen or something
         for(int i = 1;i <= lines;i++)
         {
@@ -79,7 +85,8 @@ int main(int, char**)
             
             image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, XYPixmap);
             
-            for(int x = 0;x < width; x+=width/150)
+            // e.g. is columns is 3, it will check the center pixel, and the centers between the center pixel and the two borders
+            for(int x = (width%columns)/2;x < width; x+=width/columns)
             {
                 c.pixel = XGetPixel(image, x, 0);
                 XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
@@ -95,7 +102,6 @@ int main(int, char**)
                 r_line += c.red * weight;
                 g_line += c.green * weight;
                 b_line += c.blue * weight;
-                // cout << "d:" << diff << " l:" << lightness << " w:" << weight << " r:" << r << " g:" << g << " b:" << b << "\n";
             }
 
             r += r_line / normalizer;
@@ -118,16 +124,8 @@ int main(int, char**)
         g = g*200/max_val;
         b = b*150/max_val;
 
-        // i feel like the leds are quite cold
-        // so instead of 256, i divide b by 300
-        /*r = r/normalizer/256;
-        g = g/normalizer/256;
-        b = b/normalizer/300;*/
-
-        // cout << r << " " << g << " " << b << "\n";
-
         // send to the server for display
-        sendcolor(r, g, b);
+        sendcolor(r, g, b, raspberry_ip + raspberry_port);
 
         // free up memory to prevent leak
         XFree(image);
@@ -136,8 +134,7 @@ int main(int, char**)
         // this of course greatly affects performance
         // don't only look for the server executable in your cpu usage,
         // also look for /usr/lib/Xorg cpu usage
-        // 4 checks per second keeps it at 3% on my i5
-        usleep(1000000/1);
+        usleep(1000000/checks_per_second);
     }
 
     return 0;
