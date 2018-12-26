@@ -20,6 +20,10 @@ raspberry_port = 8000
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
+    def __init__(self):
+        print(self.close_connection)
+        super()
+
     def do_GET(self):
 
         url = self.path # /?r=128&g=128&b=128
@@ -28,6 +32,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'1')
+        
 
         global r, g, b
 

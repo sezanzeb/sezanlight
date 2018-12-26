@@ -57,11 +57,11 @@ int main(void)
     // configuration
     int width = 1920;
     int height = 1080;
-    bool normalize = true;
+    bool normalize = false;
     bool increase_saturation = true;
     int checks_per_second = 1;
-    int columns = 100;
-    int lines = 10;
+    int columns = 50;
+    int lines = 3;
     char raspberry_ip[15] = "192.168.2.110";
     int raspberry_port = 8000;
 
@@ -101,19 +101,21 @@ int main(void)
             for(int x = (width%columns)/2;x < width; x+=width/columns)
             {
                 c.pixel = XGetPixel(image, x, 0);
+                int c_r = c.red/256;
+                int c_g = c.green/256;
+                int c_b = c.blue/256;
                 XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already
-                // divide by 2^10 (bitshift 10) to avoid int overflows
-                int diff = ((max(max(c.red, c.green), c.blue) - min(min(c.red, c.green), c.blue)) >> 10) + 1;
+                int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b))) + 1;
                 // and also favor light ones over dark ones
-                int lightness = max(max(c.red, c.green), c.blue) >> 10;
-                int weight = diff + lightness;
+                int lightness = c_r + c_g + c_b;
+                int weight = diff * lightness;
                 normalizer += weight;
-                r_line += c.red * weight;
-                g_line += c.green * weight;
-                b_line += c.blue * weight;
+                r_line += c_r * weight;
+                g_line += c_g * weight;
+                b_line += c_b * weight;
             }
 
             r += r_line / normalizer;
@@ -122,19 +124,45 @@ int main(void)
 
         }
 
-        // make the darkest color even darker
-        // to increase saturation
-        int min_val = min(min(r, g), b);
-        r -= min_val >> 2;
-        g -= min_val >> 2;
-        b -= min_val >> 2;
+        // r g and b are now between 0 and 255
+        r = r/lines;
+        g = g/lines;
+        b = b/lines;
 
-        // normalize it so that the lightest value is 255
-        // the leds are quite cold, so make the color warm
-        int max_val = max(max(r, g), b);
-        r = r*255/max_val;
-        g = g*200/max_val;
-        b = b*150/max_val;
+        cout << "observed color  : " << r << " " << g << " " << b << endl;
+
+        if(increase_saturation)
+        {
+            // increase distance between darkest
+            // and lightest channel
+            int min_val = min(min(r, g), b);
+            int old_max = max(max(r, g), b);
+            r -= min_val * 2 / 3;
+            g -= min_val * 2 / 3;
+            b -= min_val * 2 / 3;
+            int new_max = max(max(r, g), b);
+            // normalize to old max value
+            r = r*old_max/new_max;
+            g = g*old_max/new_max;
+            b = b*old_max/new_max;
+            cout << "saturated color : " << r << " " << g << " " << b << endl;
+        }
+
+        if(normalize)
+        {
+            // normalize it so that the lightest value is 255
+            // the leds are quite cold, so make the color warm
+            int max_val = max(max(r, g), b);
+            r = r*255/max_val;
+            g = g*255/max_val;
+            b = b*255/max_val;
+            cout << "normalized color: " << r << " " << g << " " << b << endl;
+        }
+
+        // last step: correct led color temperature
+        g = g * 10 / 13;
+        b = b * 10 / 17;
+        cout << "warmed color    : " << r << " " << g << " " << b << endl;
 
         // send to the server for display
         sendcolor(r, g, b, raspberry_ip, raspberry_port);
@@ -150,7 +178,8 @@ int main(void)
         gettimeofday(&end, NULL);
         long int end_us = end.tv_sec * 1000000 + end.tv_usec;
         int delta = (int)(end_us - start_us);
-        cout << delta << endl;
+        cout << "calculating and sending: " << delta << "us" << endl;
+        cout << endl;
         // try to check the screen colors once every second (or whatever the checks_per_second param is)
         // so substract the delta or there might be too much waiting time between each check
         usleep(max(0, 1000000/checks_per_second - delta));
