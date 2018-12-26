@@ -21,9 +21,16 @@ raspberry_port = 8000
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        global r, g, b
 
         url = self.path # /?r=128&g=128&b=128
+
+        # quickly send ok, don't block the client
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'1')
+
+        global r, g, b
+
         color_strings = re.split('[^\d]+', url)[1:]
 
         r_new = int(color_strings[0])
@@ -52,14 +59,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         pi.set_PWM_dutycycle(gpio_g, g)
         pi.set_PWM_dutycycle(gpio_b, b)
 
-        self.send_response(200)
-        self.end_headers()
-
         print(r, g, b)
-
-        # send ok
-        # makes no sense until I actually deal with various exception cases
-        # self.wfile.write(b'1')
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)

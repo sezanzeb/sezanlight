@@ -10,6 +10,9 @@
 // https://stackoverflow.com/questions/9786150/save-curl-content-result-into-a-string-in-c
 #include <curl/curl.h>
 
+// https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
+#include <sys/time.h>
+
 // https://stackoverflow.com/questions/10820377/c-format-char-array-like-printf
 
 using namespace std;
@@ -20,30 +23,36 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
-void sendcolor(int r, int g, int b, string adress)
+void sendcolor(int r, int g, int b, char * ip, int port)
 {
     CURL *curl;
     CURLcode res;
-    string readBuffer;
+
+    CURLM *multi_handle;
+    multi_handle = curl_multi_init();
+    int handle_count;
 
     curl = curl_easy_init();
     if(curl)
     {
         char url[100];
-        sprintf(url, "%s?r=%d&g=%d&b=%d", adress, r, g, b);
+        sprintf(url, "%s:%d?r=%d&g=%d&b=%d", ip, port, r, g, b);
         cout << "sending GET pramas: " << url << "\n";
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
+
+        // in order to hide server response from console
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        // curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        string readBuffer;
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        // cout << readBuffer << endl;
+
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
-
-        // cout << readBuffer << endl;
     }
 }
 
-int main(int, char**)
+int main(void)
 {
     // configuration
     int width = 1920;
@@ -51,10 +60,10 @@ int main(int, char**)
     bool normalize = true;
     bool increase_saturation = true;
     int checks_per_second = 1;
-    int columns = 50;
-    int lines = 3;
-    string raspberry_ip = "192.168.2.110";
-    string raspberry_port = "8000";
+    int columns = 100;
+    int lines = 10;
+    char raspberry_ip[15] = "192.168.2.110";
+    int raspberry_port = 8000;
 
     XColor c;
     Display *d = XOpenDisplay((char *) NULL);
@@ -63,12 +72,15 @@ int main(int, char**)
 
     while(1)
     {
-        // XGetImage seems to be rather slow
-        // but it's the fastest solution i have come across
+        // XGetImage in c++ is the fastest solution i have come across
         
         // to make it even faster, ask for a single lines instead of a lot of points to reduce number of calls.
         // asking for lines also makes it quite flexible in where to place lines for color checks.
-        // Asking for the whole screen is slow again.
+        // Asking for the whole screen is slow again. At least it seemed like that
+
+        struct timeval start;
+        gettimeofday(&start, NULL);
+        long int start_us = start.tv_sec * 1000000 + start.tv_usec;
 
         int r = 1;
         int g = 1;
@@ -78,9 +90,9 @@ int main(int, char**)
         for(int i = 1;i <= lines;i++)
         {
             // to prevent overflows, aggregate color for each line individually
-            int r_line = 0;
-            int g_line = 0;
-            int b_line = 0;
+            long int r_line = 0;
+            long int g_line = 0;
+            long int b_line = 0;
             int normalizer = 0;
             
             image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, XYPixmap);
@@ -125,7 +137,7 @@ int main(int, char**)
         b = b*150/max_val;
 
         // send to the server for display
-        sendcolor(r, g, b, raspberry_ip + raspberry_port);
+        sendcolor(r, g, b, raspberry_ip, raspberry_port);
 
         // free up memory to prevent leak
         XFree(image);
@@ -134,7 +146,14 @@ int main(int, char**)
         // this of course greatly affects performance
         // don't only look for the server executable in your cpu usage,
         // also look for /usr/lib/Xorg cpu usage
-        usleep(1000000/checks_per_second);
+        struct timeval end;
+        gettimeofday(&end, NULL);
+        long int end_us = end.tv_sec * 1000000 + end.tv_usec;
+        int delta = (int)(end_us - start_us);
+        cout << delta << endl;
+        // try to check the screen colors once every second (or whatever the checks_per_second param is)
+        // so substract the delta or there might be too much waiting time between each check
+        usleep(max(0, 1000000/checks_per_second - delta));
     }
 
     return 0;
