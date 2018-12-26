@@ -76,6 +76,8 @@ int main(void)
 
     XColor c;
     Display *d = XOpenDisplay((char *) NULL);
+    Window root = XRootWindow(d, XDefaultScreen(d));
+    Colormap colormap = XDefaultColormap(d, XDefaultScreen(d));
 
     XImage *image;
 
@@ -110,16 +112,16 @@ int main(void)
             
             // was XYPixmap
             // ZPixmap fixes cinnamon
-            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, ZPixmap);
+            image = XGetImage(d, root, 0, height/(lines+1)*i, width, 1, AllPlanes, ZPixmap);
             
             // e.g. is columns is 3, it will check the center pixel, and the centers between the center pixel and the two borders
             for(int x = (width%columns)/2;x < width; x+=width/columns)
             {
                 c.pixel = XGetPixel(image, x, 0);
+                XQueryColor(d, colormap, &c);
                 int c_r = c.red/256;
                 int c_g = c.green/256;
                 int c_b = c.blue/256;
-                XQueryColor(d, XDefaultColormap(d, XDefaultScreen(d)), &c);
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already

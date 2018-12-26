@@ -1,12 +1,15 @@
 Reads your screen contents and sends it to a remote raspberry that has single-color rgb lights, which are controlled using one PWM gpio pin per R, G and B.
 
-Using Xlib in c++ was the fastest way to read screen pixels I have come across. Since there is only a single color that needs to be figured out,
+Since there is only a single color that needs to be figured out,
 the whole process can be kept minimalistic. Therefore It's rather fast. It sparsly checks a few places on the screen (150 pixels by default) and puts
 extra weight on those with high saturation and high lightness.
 
-# dependencies
+**worked with:**
+- manjaro xfce
+- manjaro cinnamon
 
-TODO, check when I deploy the whole thing onto the htpc
+
+# Dependencies
 
 manjaro:
 
@@ -14,15 +17,19 @@ manjaro:
 sudo pacman -S curl
 ```
 
-# client
+# Client
 
-your htpc/pc/laptop running X11 and on which you watch youtube, netflix, amazon, etc., play games
+your htpc/pc/laptop running X11 and on which you watch videos:
 
 `cd client && make && ./client.o`
 
-the config file is only relevant for the client
+or, I created a similar python client out of the cpp code:
 
-# server
+`cd client && python3 client.py`
+
+use the one that works for you basically
+
+# Server
 
 your raspberry
 
@@ -41,7 +48,7 @@ ifconfig
 
 it's usually something starting with 192.168.
 
-# todo
+# TODO
 
 make config file work
 
