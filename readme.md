@@ -1,7 +1,8 @@
 Reads your screen contents and sends it to a remote raspberry that has single-color rgb lights, which are controlled using one PWM gpio pin per R, G and B.
 
 Using Xlib in c++ was the fastest way to read screen pixels I have come across. Since there is only a single color that needs to be figured out,
-the whole process can be kept minimalistic. Therefore It's rather fast.
+the whole process can be kept minimalistic. Therefore It's rather fast. It sparsly checks a few places on the screen (150 pixels by default) and puts
+extra weight on those with high saturation and high lightness.
 
 # dependencies
 

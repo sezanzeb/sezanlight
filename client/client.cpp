@@ -129,7 +129,6 @@ int main(void)
             r += r_line / normalizer;
             g += g_line / normalizer;
             b += b_line / normalizer;
-
         }
 
         // r g and b are now between 0 and 255
@@ -170,9 +169,14 @@ int main(void)
         }
 
         // last step: correct led color temperature
+        // 1. gamma
+        g = (int)(pow((float)g/255, 1.2)*255);
+        b = (int)(pow((float)b/255, 1.3)*255);
+        // 2. lightness
         g = g * 10 / 13;
         b = b * 10 / 17;
-        cout << "warmed color    : " << r << " " << g << " " << b << endl;
+        // red remains the same
+        cout << "warmer color    : " << r << " " << g << " " << b << endl;
 
         // send to the server for display
         sendcolor(r, g, b, raspberry_ip, raspberry_port);
