@@ -15,7 +15,7 @@ r = 0
 g = 0
 b = 0
 
-checks_per_second = 10
+checks_per_second = 3
 gpio_r = 17
 gpio_g = 22
 gpio_b = 24
@@ -36,7 +36,7 @@ def fade(r, g, b, r_new, g_new, b_new):
         pi.set_PWM_dutycycle(17, r_fade)
         pi.set_PWM_dutycycle(22, g_fade)
         pi.set_PWM_dutycycle(24, b_fade)
-        time.sleep(1/(checks+1))
+        time.sleep(1/checks_per_second/(checks+1))
 
     pi.set_PWM_dutycycle(gpio_r, r_new)
     pi.set_PWM_dutycycle(gpio_g, g_new)
@@ -65,7 +65,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # fade the color in a new process so that the client is not blocked
         if not proc is None:
             # make sure two fading processes are not overlapping
-            proc.terminate()
+            if proc.is_alive():
+                proc.terminate()
         proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new))
         proc.start()
 

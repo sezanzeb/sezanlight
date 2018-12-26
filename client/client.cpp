@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+#include <math.h>
 
 // many thanks to:
 // https://stackoverflow.com/questions/53688777/how-to-implement-x11return-colour-of-a-screen-pixel-c-code-for-luajits-ffi
@@ -13,7 +14,6 @@
 // https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
 #include <sys/time.h>
 
-// https://stackoverflow.com/questions/10820377/c-format-char-array-like-printf
 
 using namespace std;
 
@@ -59,11 +59,19 @@ int main(void)
     int height = 1080;
     bool normalize = false;
     bool increase_saturation = true;
-    int checks_per_second = 1;
+    int checks_per_second = 3;
     int columns = 50;
     int lines = 3;
     char raspberry_ip[15] = "192.168.2.110";
     int raspberry_port = 8000;
+
+    // some checking for broken configurations
+    if(lines == 0)
+        lines = 1;
+    if(columns == 0)
+        columns = 1;
+    if(checks_per_second == 0)
+        checks_per_second = 1;
 
     XColor c;
     Display *d = XOpenDisplay((char *) NULL);
@@ -110,7 +118,7 @@ int main(void)
                 // difference between lowest and highest value should do the trick already
                 int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b))) + 1;
                 // and also favor light ones over dark ones
-                int lightness = c_r + c_g + c_b;
+                int lightness = c_r + c_g + c_b + 1;
                 int weight = diff * lightness;
                 normalizer += weight;
                 r_line += c_r * weight;
@@ -140,7 +148,8 @@ int main(void)
             r -= min_val * 2 / 3;
             g -= min_val * 2 / 3;
             b -= min_val * 2 / 3;
-            int new_max = max(max(r, g), b);
+            // max with 1 to prevent division by zero
+            int new_max = max(1, max(max(r, g), b));
             // normalize to old max value
             r = r*old_max/new_max;
             g = g*old_max/new_max;
@@ -152,7 +161,8 @@ int main(void)
         {
             // normalize it so that the lightest value is 255
             // the leds are quite cold, so make the color warm
-            int max_val = max(max(r, g), b);
+            // max with 1 to prevent division by zero
+            int max_val = max(1, max(max(r, g), b));
             r = r*255/max_val;
             g = g*255/max_val;
             b = b*255/max_val;
