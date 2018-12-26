@@ -8,11 +8,14 @@ from multiprocessing import Process
 
 pi = pigpio.pi()
 
+# the fading process
+proc = None
+
 r = 0
 g = 0
 b = 0
 
-checks_per_second = 1
+checks_per_second = 10
 gpio_r = 17
 gpio_g = 22
 gpio_b = 24
@@ -43,7 +46,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        global r, g, b
+        global r, g, b, proc
 
         url = self.path # /?r=128&g=128&b=128
 
@@ -60,6 +63,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         b_new = int(color_strings[2])
 
         # fade the color in a new process so that the client is not blocked
+        if not proc is None:
+            # make sure two fading processes are not overlapping
+            proc.terminate()
         proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new))
         proc.start()
 
