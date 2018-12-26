@@ -108,7 +108,9 @@ int main(void)
             long int b_line = 0;
             int normalizer = 0;
             
-            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, XYPixmap);
+            // was XYPixmap
+            // ZPixmap fixes cinnamon
+            image = XGetImage(d, XRootWindow (d, XDefaultScreen(d)), 0, height/(lines+1)*i, width, 1, AllPlanes, ZPixmap);
             
             // e.g. is columns is 3, it will check the center pixel, and the centers between the center pixel and the two borders
             for(int x = (width%columns)/2;x < width; x+=width/columns)
