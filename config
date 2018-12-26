@@ -10,6 +10,7 @@ increase_saturation=True
 normalize=True
 lines=3
 columns=50
+smoothing=2
 
 # raspberry server:
 gpio_r=17

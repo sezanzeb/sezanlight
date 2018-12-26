@@ -59,6 +59,7 @@ int main(void)
     int height = 1080;
     bool normalize = false;
     bool increase_saturation = true;
+    int smoothing = 4;
     int checks_per_second = 3;
     int columns = 50;
     int lines = 3;
@@ -77,6 +78,10 @@ int main(void)
     Display *d = XOpenDisplay((char *) NULL);
 
     XImage *image;
+
+    int r_old = 0;
+    int g_old = 0;
+    int b_old = 0;
 
     while(1)
     {
@@ -167,6 +172,14 @@ int main(void)
             b = b*255/max_val;
             cout << "normalized color: " << r << " " << g << " " << b << endl;
         }
+
+        // don't overreact to sudden changes
+        r = (r_old * smoothing + r)/(smoothing + 1);
+        g = (g_old * smoothing + g)/(smoothing + 1);
+        b = (b_old * smoothing + b)/(smoothing + 1);
+        r_old = r;
+        g_old = g;
+        b_old = b;
 
         // last step: correct led color temperature
         // 1. gamma
