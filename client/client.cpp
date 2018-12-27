@@ -59,12 +59,16 @@ int main(void)
     int height = 1080;
     bool normalize = false;
     bool increase_saturation = true;
-    int smoothing = 4;
-    int checks_per_second = 3;
+    int smoothing = 1;
+    int checks_per_second = 1;
     int columns = 50;
-    int lines = 3;
+    int lines = 5;
     char raspberry_ip[15] = "192.168.2.110";
     int raspberry_port = 8000;
+
+    // controls the resolution of the color space of the leds
+    // default is 256, this is also configured in server.py
+    int full_on = 2048;
 
     // some checking for broken configurations
     if(lines == 0)
@@ -108,7 +112,7 @@ int main(void)
             long int r_line = 0;
             long int g_line = 0;
             long int b_line = 0;
-            int normalizer = 0;
+            float normalizer = 0;
             
             // was XYPixmap
             // ZPixmap fixes cinnamon
@@ -119,28 +123,33 @@ int main(void)
             {
                 c.pixel = XGetPixel(image, x, 0);
                 XQueryColor(d, colormap, &c);
-                int c_r = c.red/256;
-                int c_g = c.green/256;
-                int c_b = c.blue/256;
+                // c contains colors that are by the factor 256 too large in their number
+                // when full_on was the standard of 256, then this formular will result in:
+                // 1*c.red/256
+                // for full_on = 2048 this is: 8*c.red/256
+                int c_r = (full_on/256)*c.red/256;
+                int c_g = (full_on/256)*c.green/256;
+                int c_b = (full_on/256)*c.blue/256;
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already
-                int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b))) + 1;
+                int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)));
                 // and also favor light ones over dark ones
-                int lightness = c_r + c_g + c_b + 1;
-                int weight = diff * lightness;
+                int lightness = (c_r + c_g + c_b)/3;
+                // lightness and diff are between 0 and full_on
+                float weight = (float)(diff + lightness)/2/64 + 1; // between 1 and 5
                 normalizer += weight;
-                r_line += c_r * weight;
-                g_line += c_g * weight;
-                b_line += c_b * weight;
+                r_line += (int)(c_r * weight);
+                g_line += (int)(c_g * weight);
+                b_line += (int)(c_b * weight);
             }
 
-            r += r_line / normalizer;
-            g += g_line / normalizer;
-            b += b_line / normalizer;
+            r += r_line / (int)normalizer;
+            g += g_line / (int)normalizer;
+            b += b_line / (int)normalizer;
         }
 
-        // r g and b are now between 0 and 255
+        // r g and b are now between 0 and full_on
         r = r/lines;
         g = g/lines;
         b = b/lines;
@@ -167,13 +176,14 @@ int main(void)
 
         if(normalize)
         {
-            // normalize it so that the lightest value is 255
+            // normalize it so that the lightest value is e.g. full_on
             // the leds are quite cold, so make the color warm
             // max with 1 to prevent division by zero
-            int max_val = max(1, max(max(r, g), b));
-            r = r*255/max_val;
-            g = g*255/max_val;
-            b = b*255/max_val;
+            int old_max = max(1, max(max(r, g), b));
+            int new_max = full_on;
+            r = r*new_max/old_max;
+            g = g*new_max/old_max;
+            b = b*new_max/old_max;
             cout << "normalized color: " << r << " " << g << " " << b << endl;
         }
 
@@ -187,8 +197,8 @@ int main(void)
 
         // last step: correct led color temperature
         // 1. gamma
-        g = (int)(pow((float)g/255, 1.2)*255);
-        b = (int)(pow((float)b/255, 1.3)*255);
+        g = (int)(pow((float)g/full_on, 1.2)*full_on);
+        b = (int)(pow((float)b/full_on, 1.3)*full_on);
         // 2. lightness
         g = g * 10 / 13;
         b = b * 10 / 17;

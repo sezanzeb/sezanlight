@@ -27,6 +27,10 @@ def main():
     raspberry_ip = "192.168.2.110"
     raspberry_port = 8000
 
+    # controls the resolution of the color space of the leds
+    # default is 256, this is also configured in server.py
+    full_on = 2048;
+
     # some checking for broken configurations
     if lines == 0:
         lines = 1
@@ -75,9 +79,10 @@ def main():
                 val = image_rgb.im[x]
                 # lf_colour = PIL.ImageStat.Stat(image_rgb).mean
                 # val = tuple(map(int, lf_colour))
-                c_r = val[0]
-                c_g = val[1]
-                c_b = val[2]
+                # scale color space according to full_on
+                c_r = val[0] * (full_on/256)
+                c_g = val[1] * (full_on/256)
+                c_b = val[2] * (full_on/256)
                 # give saturated colors (like green, purple, blue, orange, ...) more weight
                 # over grey colors
                 # difference between lowest and highest value should do the trick already
@@ -96,7 +101,7 @@ def main():
             b += b_line / normalizer
         
 
-        # r g and b are now between 0 and 255
+        # r g and b are now between 0 and full_on
         r = int(r/lines)
         g = int(g/lines)
         b = int(b/lines)
@@ -123,13 +128,13 @@ def main():
 
         if normalize:
         
-            # normalize it so that the lightest value is 255
+            # normalize it so that the lightest value is full_on
             # the leds are quite cold, so make the color warm
             # max with 1 to prevent division by zero
             max_val = max(1, max(max(r, g), b))
-            r = r*255//max_val
-            g = g*255//max_val
-            b = b*255//max_val
+            r = r*full_on//max_val
+            g = g*full_on//max_val
+            b = b*full_on//max_val
             print("normalized color:", r, g, b)
         
 
@@ -143,8 +148,8 @@ def main():
 
         # last step: correct led color temperature
         # 1. gamma
-        g = int(pow(g/255, 1.2)*255)
-        b = int(pow(b/255, 1.3)*255)
+        g = int(pow(g/full_on, 1.2)*full_on)
+        b = int(pow(b/full_on, 1.3)*full_on)
         # 2. lightness
         g = g * 10 // 13
         b = b * 10 // 17

@@ -21,14 +21,25 @@ gpio_b = 24
 raspberry_ip = '192.168.2.110'
 raspberry_port = 8000
 
+# higher resolution for color changes
+# http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
+full_on = 2048
+pi.set_PWM_range(gpio_r, full_on)
+pi.set_PWM_range(gpio_g, full_on)
+pi.set_PWM_range(gpio_b, full_on)
+
 def fade(r, g, b, r_new, g_new, b_new, checks_per_second):
 
-    # smoothly fade. after 1 second this loop should be ended,
-    # therefore i end after 59/60th of a second
-    checks = int(60/checks_per_second)-1
+    # smoothly fade. after 1 second (depending on checks_per_second)
+    # this loop should be ended and a new one started
+    frequency = 200 #hz
+    checks = int(frequency/checks_per_second)-1
 
     for i in range(checks):
+        # f will move from 0 to 1
         f = i/checks
+        # and add old and new color together proportionally
+        # so that a fading effect is created
         r_fade = int(r*(1-f) + r_new*(f))
         g_fade = int(g*(1-f) + g_new*(f))
         b_fade = int(b*(1-f) + b_new*(f))
