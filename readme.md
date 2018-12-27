@@ -52,6 +52,8 @@ it's usually something starting with 192.168.
 
 ## TODO
 
+docstrings
+
 make config file work
 
 see what this xshmgetimage stuff is and if it is faster if it does something similar:

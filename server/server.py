@@ -15,14 +15,13 @@ r = 0
 g = 0
 b = 0
 
-checks_per_second = 3
 gpio_r = 17
 gpio_g = 22
 gpio_b = 24
 raspberry_ip = '192.168.2.110'
 raspberry_port = 8000
 
-def fade(r, g, b, r_new, g_new, b_new):
+def fade(r, g, b, r_new, g_new, b_new, checks_per_second):
 
     # smoothly fade. after 1 second this loop should be ended,
     # therefore i end after 59/60th of a second
@@ -56,18 +55,19 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'1')
 
-        color_strings = re.split('[^\d]+', url)[1:]
+        params = re.split('[^\d]+', url)[1:]
 
-        r_new = int(color_strings[0])
-        g_new = int(color_strings[1])
-        b_new = int(color_strings[2])
+        r_new = int(params[0])
+        g_new = int(params[1])
+        b_new = int(params[2])
+        checks_per_second = int(params[3])
 
         # fade the color in a new process so that the client is not blocked
         if not proc is None:
             # make sure two fading processes are not overlapping
             if proc.is_alive():
                 proc.terminate()
-        proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new))
+        proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new, checks_per_second))
         proc.start()
 
         # overwrite state of server

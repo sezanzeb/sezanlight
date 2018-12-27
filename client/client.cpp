@@ -23,7 +23,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
-void sendcolor(int r, int g, int b, char * ip, int port)
+void sendcolor(int r, int g, int b, char * ip, int port, int checks_per_second)
 {
     CURL *curl;
     CURLcode res;
@@ -36,7 +36,7 @@ void sendcolor(int r, int g, int b, char * ip, int port)
     if(curl)
     {
         char url[100];
-        sprintf(url, "%s:%d?r=%d&g=%d&b=%d", ip, port, r, g, b);
+        sprintf(url, "%s:%d?r=%d&g=%d&b=%d&cps=%d", ip, port, r, g, b, checks_per_second);
         cout << "sending GET pramas: " << url << "\n";
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -196,7 +196,7 @@ int main(void)
         cout << "warmer color    : " << r << " " << g << " " << b << endl;
 
         // send to the server for display
-        sendcolor(r, g, b, raspberry_ip, raspberry_port);
+        sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second);
 
         // free up memory to prevent leak
         XFree(image);

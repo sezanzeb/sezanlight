@@ -7,8 +7,8 @@ import Xlib.display # python-xlib
 import requests
 import time
 
-def sendcolor(r, g, b, ip, port):
-    url = "http://{}:{}?r={}&g={}&b={}".format(ip, port, int(r), int(g), int(b))
+def sendcolor(r, g, b, ip, port, checks_per_second):
+    url = "http://{}:{}?r={}&g={}&b={}&cps={}".format(ip, port, int(r), int(g), int(b), checks_per_second)
     print("sending GET pramas:", url)
     requests.get(url)
 
@@ -152,7 +152,7 @@ def main():
         print("warmer color    :", r, g, b)
 
         # send to the server for display
-        sendcolor(r, g, b, raspberry_ip, raspberry_port)
+        sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second)
 
         # 1000000 is one second
         # this of course greatly affects performance
