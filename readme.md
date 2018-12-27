@@ -35,7 +35,11 @@ My RGB-strip setup is this one: https://dordnung.de/raspberrypi-ledstrip/
 
 **2. clone**
 
-This repo on your pc and on your raspberry
+Clone this repo on your pc and on your raspberry
+
+```
+git clone https://github.com/sezanzeb/sezanlight.git
+```
 
 **3. configuration (note that the config file does not work yet)**
 
