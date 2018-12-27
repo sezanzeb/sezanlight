@@ -104,7 +104,17 @@ see what this xshmgetimage stuff is and if it is faster if it does something sim
 
 ## Future
 
-visualize sound
+**1. single color mode**
+
+Just setting a single color once.
+
+**2. configuration tool**
+
+Web frontend. Do some fancy javascript stuff like selecting a color from a color
+wheel. The web frontend has the pro, that it could be opened on the smartphone
+in order to change the rooms mood.
+
+**3. visualize sound**
 
 use one of the R, G and B channels for lows, mids and highs or something. Use bandpassing, lowcut and highcut for that.
 
@@ -115,3 +125,4 @@ Encode in the get request that the music mode is active so that the raspberry qu
 fading it slowly.
 
 This signal processing stuff I certainly will do in python and not in c++.
+
