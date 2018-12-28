@@ -4,12 +4,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import re
 import pigpio
 import time
-from multiprocessing import Process
+# from multiprocessing import Process
 
 pi = pigpio.pi()
 
 # the fading process
-proc = None
+# proc = None
 
 r = 0
 g = 0
@@ -68,16 +68,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'1')
 
+        # https://stackoverflow.com/questions/6594418/simplehttprequesthandler-close-connection-before-returning-from-do-post-method
+        # self.finish()
+        self.connection.close()
+
         params = re.split('[^\d]+', url)[1:]
 
         r_new = int(params[0])
         g_new = int(params[1])
         b_new = int(params[2])
         checks_per_second = int(params[3])
-
-        # https://stackoverflow.com/questions/6594418/simplehttprequesthandler-close-connection-before-returning-from-do-post-method
-        self.finish()
-        self.connection.close()
 
         """# fade the color in a new process so that the client is not blocked
         # make sure two fading processes are not overlapping
@@ -91,6 +91,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             b = b_new"""
 
         fade(r, g, b, r_new, g_new, b_new, checks_per_second)
+        r = r_new
+        g = g_new
+        b = b_new
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
