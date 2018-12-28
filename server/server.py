@@ -85,7 +85,7 @@ def fade():
                 pi.set_PWM_dutycycle(gpio_r, r)
                 pi.set_PWM_dutycycle(gpio_g, g)
                 pi.set_PWM_dutycycle(gpio_b, b)  
-                print(r, g, b)
+                # print(r, g, b)
 
             else:
                 pi.set_PWM_dutycycle(gpio_r, r_target)
