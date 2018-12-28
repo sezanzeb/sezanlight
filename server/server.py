@@ -54,8 +54,6 @@ def fade(r, g, b, r_new, g_new, b_new, checks_per_second):
     pi.set_PWM_dutycycle(gpio_g, g_new)
     pi.set_PWM_dutycycle(gpio_b, b_new)
 
-    exit(1)
-
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -77,7 +75,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         b_new = int(params[2])
         checks_per_second = int(params[3])
 
-        # fade the color in a new process so that the client is not blocked
+        # https://stackoverflow.com/questions/6594418/simplehttprequesthandler-close-connection-before-returning-from-do-post-method
+        self.finish()
+        self.connection.close()
+
+        """# fade the color in a new process so that the client is not blocked
         # make sure two fading processes are not overlapping
         if proc is None or not proc.is_alive():
             proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new, checks_per_second))
@@ -86,7 +88,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # overwrite state of server
             r = r_new
             g = g_new
-            b = b_new
+            b = b_new"""
+
+        fade(r, g, b, r_new, g_new, b_new, checks_per_second)
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
