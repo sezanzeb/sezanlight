@@ -59,7 +59,7 @@ int main(void)
     int height = 1080;
 
     // sampling
-    int smoothing = 2;
+    int smoothing = 6;
     int checks_per_second = 2;
     int columns = 100;
     int lines = 3;
@@ -69,6 +69,11 @@ int main(void)
     int raspberry_port = 8000;
 
     // colors
+    // if true, will use a window average for smoothing
+    // if false, weights the old color by smoothing and averages,
+    // creating an "ease out" effect but produces artifacts when fading to black
+    // because incremential changes will start to produce jumping hues.
+    bool linear_smoothing = true;
     float brightness[3] = {1.00, 0.85, 0.5};
     float gamma[3] = {1.10, 0.88, 0.7};
     // 0 = no nrmalization, 0.5 = increase lightness, 1 = normalize to full_on
@@ -78,9 +83,11 @@ int main(void)
     bool normalize_sum = true;
     // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
     float increase_saturation = 0.67;
+
+    // try to prevent suddenly jumping colors when
+    // changing from e.g. <10, 11, 10> to <10, 10, 10>
     // if below this level, set to black
-    // helps to eliminate artifacts
-    int black_threshold = 10;
+    int black_threshold = 30;
 
 
 
@@ -104,9 +111,17 @@ int main(void)
 
     XImage *image;
 
+    // used for non-linear ease-out smoothing
     int r_old = 0;
     int g_old = 0;
     int b_old = 0;
+
+    // used for linear smoothing
+    int r_window[smoothing] = {0, 0, 0};
+    int g_window[smoothing] = {0, 0, 0};
+    int b_window[smoothing] = {0, 0, 0};
+
+    int i = 0;
 
     while(1)
     {
@@ -175,7 +190,6 @@ int main(void)
         r = r/lines;
         g = g/lines;
         b = b/lines;
-
         cout << "observed color  : " << r << " " << g << " " << b << endl;
 
         if(increase_saturation > 0)
@@ -214,18 +228,6 @@ int main(void)
             cout << "normalized color: " << r << " " << g << " " << b << endl;
         }
 
-        // don't overreact to sudden changes
-        if(smoothing > 0)
-        {
-            r = (r_old * smoothing + r)/(smoothing + 1);
-            g = (g_old * smoothing + g)/(smoothing + 1);
-            b = (b_old * smoothing + b)/(smoothing + 1);
-            r_old = r;
-            g_old = g;
-            b_old = b;
-            cout << "smoothed color  : " << r << " " << g << " " << b << endl;
-        }
-
         // correct led color temperature
         // 1. gamma
         if(gamma[0] > 0) r = (int)(pow((float)r/full_on, 1/gamma[0])*full_on);
@@ -241,6 +243,42 @@ int main(void)
         b = min(full_on, max(0, b));
         cout << "filtered color  : " << r << " " << g << " " << b << endl;
 
+        // don't overreact to sudden changes
+        if(smoothing > 0)
+        {
+            if(linear_smoothing)
+            {
+                r_window[i%smoothing] = r;
+                g_window[i%smoothing] = g;
+                b_window[i%smoothing] = b;
+                // calculate average of window
+                r = 0;
+                g = 0;
+                b = 0;
+                for(int w = 0; w < smoothing; w ++)
+                {
+                    r += r_window[w];
+                    g += g_window[w];
+                    b += b_window[w];
+                }
+                r = r / smoothing;
+                g = g / smoothing;
+                b = b / smoothing;
+            }
+            else
+            {
+                r = (r_old * smoothing + r)/(smoothing + 1);
+                g = (g_old * smoothing + g)/(smoothing + 1);
+                b = (b_old * smoothing + b)/(smoothing + 1);
+                r_old = r;
+                g_old = g;
+                b_old = b;
+            }
+
+            cout << "smoothed color  : " << r << " " << g << " " << b << endl;
+        }
+
+        // turn off leds for values that are too dark
         if(r+g+b < black_threshold*3)
         {
             r = 0;
@@ -265,6 +303,9 @@ int main(void)
         // try to check the screen colors once every second (or whatever the checks_per_second param is)
         // so substract the delta or there might be too much waiting time between each check
         usleep(max(0, 1000000/checks_per_second - delta));
+
+        // increment i, used for creating the window of colors for smoothing
+        i ++;
     }
 
     return 0;
