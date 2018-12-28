@@ -37,6 +37,7 @@ def fade(r, g, b, r_new, g_new, b_new, checks_per_second):
 
     for i in range(checks):
         # f will move from 0 to 1
+        start = time.time()
         f = i/checks
         # and add old and new color together proportionally
         # so that a fading effect is created
@@ -46,11 +47,14 @@ def fade(r, g, b, r_new, g_new, b_new, checks_per_second):
         pi.set_PWM_dutycycle(17, r_fade)
         pi.set_PWM_dutycycle(22, g_fade)
         pi.set_PWM_dutycycle(24, b_fade)
-        time.sleep(1/checks_per_second/(checks+1))
+        delta = time.time()-start
+        time.sleep(max(0, 1/checks_per_second/(checks+1)-delta))
 
     pi.set_PWM_dutycycle(gpio_r, r_new)
     pi.set_PWM_dutycycle(gpio_g, g_new)
     pi.set_PWM_dutycycle(gpio_b, b_new)
+
+    exit(1)
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
@@ -74,17 +78,15 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         checks_per_second = int(params[3])
 
         # fade the color in a new process so that the client is not blocked
-        if not proc is None:
-            # make sure two fading processes are not overlapping
-            if proc.is_alive():
-                proc.terminate()
-        proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new, checks_per_second))
-        proc.start()
+        # make sure two fading processes are not overlapping
+        if proc is None or not proc.is_alive():
+            proc = Process(target=fade, args=(r, g, b, r_new, g_new, b_new, checks_per_second))
+            proc.start()
 
-        # overwrite state of server
-        r = r_new
-        g = g_new
-        b = b_new
+            # overwrite state of server
+            r = r_new
+            g = g_new
+            b = b_new
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)

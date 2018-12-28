@@ -35,7 +35,7 @@ sudo pacman -S curl
 ```
 ```
 # on debian/ubuntu, it probably is:
-sudo aptitude install libcurl-dev
+sudo apt install libcurl-dev
 ```
 
 **3. configuration (note that the config file does not work yet)**
