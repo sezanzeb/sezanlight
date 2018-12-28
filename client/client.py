@@ -1,4 +1,5 @@
 # this is a child of client.cpp
+# possibly outdated and might not provide the same functionality as client.cpp
 
 import PIL.Image # python-imaging
 import PIL.ImageStat # python-imaging

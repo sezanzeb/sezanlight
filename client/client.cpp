@@ -54,17 +54,36 @@ void sendcolor(int r, int g, int b, char * ip, int port, int checks_per_second)
 
 int main(void)
 {
-    // configuration
+    // screen
     int width = 1920;
     int height = 1080;
-    bool normalize = false;
-    bool increase_saturation = true;
-    int smoothing = 1;
-    int checks_per_second = 1;
-    int columns = 50;
-    int lines = 5;
+
+    // sampling
+    int smoothing = 2;
+    int checks_per_second = 2;
+    int columns = 100;
+    int lines = 3;
+
+    // hardware
     char raspberry_ip[15] = "192.168.2.110";
     int raspberry_port = 8000;
+
+    // colors
+    float brightness[3] = {1.00, 0.85, 0.5};
+    float gamma[3] = {1.10, 0.88, 0.7};
+    // 0 = no nrmalization, 0.5 = increase lightness, 1 = normalize to full_on
+    float normalize = 0;
+    // if false, will normalize the max value to full_on, if true wil normalize the sum to it
+    // setting it to true will basically favor saturated colors over grey ones during normalization
+    bool normalize_sum = true;
+    // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
+    float increase_saturation = 0.67;
+    // if below this level, set to black
+    // helps to eliminate artifacts
+    int black_threshold = 10;
+
+
+
 
     // controls the resolution of the color space of the leds
     // default is 256, this is also configured in server.py
@@ -137,12 +156,15 @@ int main(void)
                 // and also favor light ones over dark ones
                 int lightness = (c_r + c_g + c_b)/3;
                 // lightness and diff are between 0 and full_on
-                float weight = (float)(diff + lightness)/2/64 + 1; // between 1 and 5
+                float weight = (float)(diff + lightness)/2/64 + 1; // between 1 and 32 (full_on/64)
                 normalizer += weight;
                 r_line += (int)(c_r * weight);
                 g_line += (int)(c_g * weight);
                 b_line += (int)(c_b * weight);
             }
+
+            // free up memory to prevent leak
+            XFree(image);
 
             r += r_line / (int)normalizer;
             g += g_line / (int)normalizer;
@@ -156,60 +178,79 @@ int main(void)
 
         cout << "observed color  : " << r << " " << g << " " << b << endl;
 
-        if(increase_saturation)
+        if(increase_saturation > 0)
         {
             // increase distance between darkest
             // and lightest channel
             int min_val = min(min(r, g), b);
             int old_max = max(max(r, g), b);
-            r -= min_val * 2 / 3;
-            g -= min_val * 2 / 3;
-            b -= min_val * 2 / 3;
+            r -= min_val * increase_saturation;
+            g -= min_val * increase_saturation;
+            b -= min_val * increase_saturation;
             // max with 1 to prevent division by zero
             int new_max = max(1, max(max(r, g), b));
             // normalize to old max value
-            r = r*old_max/new_max;
-            g = g*old_max/new_max;
-            b = b*old_max/new_max;
+            r = (int)(r*old_max/new_max);
+            g = (int)(g*old_max/new_max);
+            b = (int)(b*old_max/new_max);
             cout << "saturated color : " << r << " " << g << " " << b << endl;
         }
 
-        if(normalize)
+        if(normalize > 0)
         {
             // normalize it so that the lightest value is e.g. full_on
-            // the leds are quite cold, so make the color warm
             // max with 1 to prevent division by zero
-            int old_max = max(1, max(max(r, g), b));
-            int new_max = full_on;
-            r = r*new_max/old_max;
-            g = g*new_max/old_max;
-            b = b*new_max/old_max;
+            int old_max;
+            if(normalize_sum) old_max = r + g + b;
+            else old_max = max(max(r, g), b);
+            old_max = max(1, old_max);
+            if(old_max >= 0)
+            {
+                int new_max = full_on;
+                r = r*(1-normalize) + r*new_max/old_max*normalize;
+                g = g*(1-normalize) + g*new_max/old_max*normalize;
+                b = b*(1-normalize) + b*new_max/old_max*normalize;
+            }
             cout << "normalized color: " << r << " " << g << " " << b << endl;
         }
 
         // don't overreact to sudden changes
-        r = (r_old * smoothing + r)/(smoothing + 1);
-        g = (g_old * smoothing + g)/(smoothing + 1);
-        b = (b_old * smoothing + b)/(smoothing + 1);
-        r_old = r;
-        g_old = g;
-        b_old = b;
+        if(smoothing > 0)
+        {
+            r = (r_old * smoothing + r)/(smoothing + 1);
+            g = (g_old * smoothing + g)/(smoothing + 1);
+            b = (b_old * smoothing + b)/(smoothing + 1);
+            r_old = r;
+            g_old = g;
+            b_old = b;
+            cout << "smoothed color  : " << r << " " << g << " " << b << endl;
+        }
 
-        // last step: correct led color temperature
+        // correct led color temperature
         // 1. gamma
-        g = (int)(pow((float)g/full_on, 1.2)*full_on);
-        b = (int)(pow((float)b/full_on, 1.3)*full_on);
-        // 2. lightness
-        g = g * 10 / 13;
-        b = b * 10 / 17;
-        // red remains the same
-        cout << "warmer color    : " << r << " " << g << " " << b << endl;
+        if(gamma[0] > 0) r = (int)(pow((float)r/full_on, 1/gamma[0])*full_on);
+        if(gamma[1] > 0) g = (int)(pow((float)g/full_on, 1/gamma[1])*full_on);
+        if(gamma[2] > 0) b = (int)(pow((float)b/full_on, 1/gamma[2])*full_on);
+        // 2. brightness
+        r = (int)(r * brightness[0]);
+        g = (int)(g * brightness[1]);
+        b = (int)(b * brightness[2]);
+        // 3. clip into color range
+        r = min(full_on, max(0, r));
+        g = min(full_on, max(0, g));
+        b = min(full_on, max(0, b));
+        cout << "filtered color  : " << r << " " << g << " " << b << endl;
+
+        if(r+g+b < black_threshold*3)
+        {
+            r = 0;
+            g = 0;
+            b = 0;
+            cout << "setting to black" << endl;
+        }
 
         // send to the server for display
         sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second);
-
-        // free up memory to prevent leak
-        XFree(image);
 
         // 1000000 is one second
         // this of course greatly affects performance
