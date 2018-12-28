@@ -118,16 +118,30 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # doesnt work...
         # (still blocks the client)
 
-        params = re.split('[^\d]+', url)[1:]
+        params_split = re.split('[=&]', url[2:])
+        # example: ['r', '048', 'g', '1024.3', 'b', '0', 'cps', '1']
+        i = 0
+        params = {}
+        try:
+            while i < len(params_split):
+                key = params_split[i]
+                value = params_split[i+1]
+                # interpret as integer, failsafe way
+                params[key] = int(float(value))
+                i += 2
+        except:
+            print('could not parse:', url, 'format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"')
+            return
+        # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
-        checks_per_second = int(params[3])
+        checks_per_second = params['cps']
         checks = int(frequency/checks_per_second)-1
 
         # restart fading:
         f = 0
-        r_target = int(params[0])
-        g_target = int(params[1])
-        b_target = int(params[2])
+        r_target = params['r']
+        g_target = params['g']
+        b_target = params['b']
         # start where fading has just been
         r_start = r
         g_start = g
