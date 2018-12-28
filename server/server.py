@@ -139,13 +139,16 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # restart fading:
         f = 0
-        r_target = params['r']
-        g_target = params['g']
-        b_target = params['b']
+        # only put valid parameters into rgb_target and _start, as the
+        # fade thread might read from them at any point. So no temporary
+        # stuff that needs to be maxed afterwards or something.
+        r_target = min(0, max(full_on, params['r']))
+        g_target = min(0, max(full_on, params['g']))
+        b_target = min(0, max(full_on, params['b']))
         # start where fading has just been
-        r_start = r
-        g_start = g
-        b_start = b
+        r_start = min(0, max(full_on, r))
+        g_start = min(0, max(full_on, g))
+        b_start = min(0, max(full_on, b))
 
 # the thread that just keeps fading forever,
 # whereas the main thread writes the variables from the get request into the
