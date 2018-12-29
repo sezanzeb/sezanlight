@@ -22,7 +22,7 @@ from threading import Thread
 pi = pigpio.pi()
 
 # the fadpything thread
-thread = None
+fader = None
 
 # current color during fading and statically
 r = 0
@@ -105,6 +105,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         global checks_per_second, checks, f
         global r_target, g_target, b_target
         global r_start, g_start, b_start
+        global fader
 
         url = self.path # /?r=128&g=128&b=128
 
@@ -134,11 +135,19 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return
         # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
-        checks_per_second = params['cps']
-        checks = int(frequency/checks_per_second)-1
+        checks_per_second = max(1, params['cps'])
+        checks = max(1, int(frequency/checks_per_second)-1)
 
-        # restart fading:
+        # reset fading state:
         f = 0
+        # fader is the thread that just keeps fading forever,
+        # whereas the main thread writes the variables from the get request into the
+        # processes (shared between threads) memory that are used for fading:
+        if fader is None or not fader.is_alive():
+            # also check if still alive, restart if not
+            print('starting fader')
+            fader = Thread(target=fade)
+            fader.start()
         # only put valid parameters into rgb_target and _start, as the
         # fade thread might read from them at any point. So no temporary
         # stuff that needs to be maxed afterwards or something.
@@ -149,12 +158,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         r_start = max(0, min(full_on, r))
         g_start = max(0, min(full_on, g))
         b_start = max(0, min(full_on, b))
-
-# the thread that just keeps fading forever,
-# whereas the main thread writes the variables from the get request into the
-# processes (shared between threads) memory that are used for fading:
-fader = Thread(target=fade)
-fader.start()
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
