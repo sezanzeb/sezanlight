@@ -82,6 +82,17 @@ Once you know that the stuff is working you can go ahead and add it to autostart
 if you want (both server and client). This depends on your desktop environment and
 distro and hopefully you are able to find out how to do this on the internet.
 
+Tutorial for raspberry: https://tutorials-raspberrypi.com/raspberry-pi-autostart-start-program-automatically/
+
+```
+# see link above for complete contents of file
+# part of the contents of /etc/init.d/sezanlight
+case "$1" in
+    start)
+        sudo pigpiod
+        python3 /home/pi/sezanlight/server/server.py
+```
+
 Set the Raspberries IP to a static one so that it does not have to be reconfigured
 later again. I did that in dhcpcd.conf, which has lots of comments and which is rather
 straightforward.

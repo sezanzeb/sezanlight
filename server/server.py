@@ -53,7 +53,10 @@ checks = 0
 gpio_r = 17
 gpio_g = 22
 gpio_b = 24
-raspberry_ip = '192.168.2.110'
+
+# 0.0.0.0 works if you send requests from another local machine to the raspberry
+# 'localhost' would only allow requests from within the raspberry
+raspberry_ip = '0.0.0.0'
 raspberry_port = 8000
 
 # higher resolution for color changes
