@@ -57,7 +57,7 @@ gpio_b = 24
 # 0.0.0.0 works if you send requests from another local machine to the raspberry
 # 'localhost' would only allow requests from within the raspberry
 raspberry_ip = '0.0.0.0'
-raspberry_port = 8000
+raspberry_port = 3546
 
 # higher resolution for color changes
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
@@ -112,28 +112,22 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         url = self.path # /?r=128&g=128&b=128
 
-        # quickly send ok, don't block the client
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b'1')
-        # https://stackoverflow.com/questions/6594418/simplehttprequesthandler-close-connection-before-returning-from-do-post-method
-        # self.finish()
-        # self.connection.close()
-        # doesnt work...
-        # (still blocks the client)
 
-        params_split = re.split('[=&]', url[2:])
-        # example: ['r', '048', 'g', '1024.3', 'b', '0', 'cps', '1']
+        params_split = url[2:].split('&')
+        # example: ['r=048', 'g=1024.3', 'b=0', 'cps=1']
         i = 0
-        params = {}
+        # default params:
+        params = {'r': 0, 'g': 0, 'b': 0, 'cps': 1}
         try:
             while i < len(params_split):
-                key = params_split[i]
-                value = params_split[i+1]
+                key, value = params_split[i].split('=')
                 # interpret as integer, failsafe way
                 params[key] = int(float(value))
-                i += 2
+                i += 1
         except:
+            self.wfile.write(b'0')
             print('could not parse:', url, 'format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"')
             return
         # is now: {r: 48, g: 1024, b: 0, cps: 1}
@@ -161,6 +155,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         r_start = max(0, min(full_on, r))
         g_start = max(0, min(full_on, g))
         b_start = max(0, min(full_on, b))
+
+        # send ok
+        self.wfile.write(b'1')
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)

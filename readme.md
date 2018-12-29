@@ -38,7 +38,7 @@ sudo pacman -S curl
 sudo apt install libcurl-dev
 ```
 
-**3. configuration (note that the config file does not work yet)**
+**3. configuration**
 
 In order to setup the config file, find out the ip of your raspberry using (execute on the raspberry):
 
@@ -48,12 +48,9 @@ ifconfig
 
 It's usually something starting with 192.168.
 
-Open the file called "config" on the client:
+Open the file called "config" on the client, insert the raspberries ip like this (example):
 
-- for accurate results, increase lines and columns
-- for a fast response, set smoothing to 1 or 0 and increase checks_per_second
-- for a lightweight and smooth mode, set lines and columns low, smoothing to 1 and checks_per_second to 1
-- for an accurate and smooth mode, increase checks_per_second, smoothing, lines and columns (e.g. 3, 3, 10 and 150)
+raspberry_ip=192.168.1.100
 
 And also insert the recently figured out ip of your raspberry
 
@@ -97,15 +94,18 @@ Set the Raspberries IP to a static one so that it does not have to be reconfigur
 later again. I did that in dhcpcd.conf, which has lots of comments and which is rather
 straightforward.
 
+(It might be noteworthy that this breaks the internet connection of my pi,
+but for some people it doesn't. But I was still able to connect to the local network so with scp I was able to update the pi's server software.)
+
 ## Static Colors
 
 Just setting a single color once. At the moment this can be done by typing this:
 
 ```
-192.168.2.110:8000?r=2048&g=1024&b=0&cps=2
+192.168.2.110:3546?r=2048&g=1024&b=0&cps=2
 ```
 
-into your browser (replace 192.168.2.110:8000 with your raspberries local ip and the port on which the server is running)
+into your browser (replace 192.168.2.110:3546 with your raspberries local ip and the port on which the server is running)
 
 ## Future
 

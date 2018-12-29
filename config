@@ -1,18 +1,28 @@
+# sezanlight configuration file
+# note, that the whitespaces are there only to test if the client breaks
+# they are not required
+
 # for both server and client:
-raspberry_ip=192.168.2.110
-raspberry_port=8000
-checks_per_second=1
+# for the port I just went with some random unassigned port from this list:
+# https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
+raspberry_port=3546
 
 # client:
-source_width=1920
-source_height=1080
-increase_saturation=True
-normalize=True
-lines=3
+raspberry_ip= 192.168.2.50
+screen_width=1920
+screen_height=1080
+increase_saturation= 0.67
+normalize=0
+lines = 3
 columns=50
-smoothing=2
+smoothing= 2
+checks_per_second=1 
+brightness= 1.00,0.85, 0.5
+gamma =1.10, 0.88,0.7
 
-# raspberry server:
+# raspberry server (this config does not work yet):
+# probably going to send this to the raspberry so only one config file
+# is relevant
 gpio_r=17
 gpio_g=22
 gpio_b=24

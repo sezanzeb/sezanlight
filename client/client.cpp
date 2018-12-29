@@ -14,16 +14,27 @@
 // https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
 #include <sys/time.h>
 
+// https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c#7868998
+#include <fstream>
+#include <sstream>
+
+// https://stackoverflow.com/questions/3578083/what-is-the-best-way-to-use-a-hashmap-in-c
+#include <map>
+
+// https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+#include <boost/algorithm/string.hpp>
+
+
 
 using namespace std;
 
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    ((string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
+    ((string*)userp)->append((char*)contents, size *nmemb);
+    return size *nmemb;
 }
 
-void sendcolor(int r, int g, int b, char * ip, int port, int checks_per_second)
+void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second)
 {
     CURL *curl;
     CURLcode res;
@@ -52,11 +63,32 @@ void sendcolor(int r, int g, int b, char * ip, int port, int checks_per_second)
     }
 }
 
+void parse_float_array(string strvalue, int size, float *array)
+{
+    // more complicated stuff, one float per channel in array
+    int channel = 0;
+    int j = 0;
+    while(true)
+    {
+        if(strvalue[j] == ',' or strvalue[j] == '\0')
+        {
+            cout << channel << endl;
+            float value = atof(strvalue.substr(0, j).c_str());
+            array[channel] = value;
+            channel ++;
+        }
+        j++;
+        if(strvalue[j] != '\0') break;
+    }
+}
+
 int main(void)
 {
+    // default params:
+
     // screen
-    int width = 1920;
-    int height = 1080;
+    int screen_width = 1920;
+    int screen_height = 1080;
 
     // sampling
     int smoothing = 6;
@@ -65,8 +97,8 @@ int main(void)
     int lines = 3;
 
     // hardware
-    char raspberry_ip[15] = "192.168.2.110";
-    int raspberry_port = 8000;
+    string raspberry_ip = "";
+    int raspberry_port = 3546;
 
     // colors
     // if true, will use a window average for smoothing
@@ -89,8 +121,52 @@ int main(void)
     // if below this level, set to black
     int black_threshold = 30;
 
+    // overwrite default params with params from config file
+    ifstream infile("../config");
+    string line;
+    while (std::getline(infile, line))
+    {
+        // search for equal symbol
+        for(int i = 0; line[i] != '\0'; i++)
+        {
+            if(line[i] == '=')
+            {
+                string key = line.substr(0, i);
+                string strvalue = line.substr(i+1);
+                // trim in-place
+                boost::trim(key);
+                boost::trim(strvalue);
 
+                // depending on the key, parse the value in different ways
+                try
+                {
+                    // yes i do find this more convenient than switch case break
+                    if(key == "raspberry_port") raspberry_port = stoi(strvalue);
+                    else if(key == "raspberry_ip") raspberry_ip = strvalue;
+                    else if(key == "screen_width") screen_width = stoi(strvalue);
+                    else if(key == "screen_height") screen_height = stoi(strvalue);
+                    else if(key == "increase_saturation") increase_saturation = atof(strvalue.c_str());
+                    else if(key == "normalize") normalize = atof(strvalue.c_str());
+                    else if(key == "lines") lines = stoi(strvalue);
+                    else if(key == "columns") columns = stoi(strvalue);
+                    else if(key == "smoothing") smoothing = stoi(strvalue);
+                    else if(key == "checks_per_second") checks_per_second = stoi(strvalue);
+                    else if(key == "brightness") parse_float_array(strvalue, 3, brightness);
+                    else if(key == "gamma") parse_float_array(strvalue, 3, gamma);
+                }
+                catch (invalid_argument e)
+                {
+                    cout << "could not parse \"" << key << "\" with value \"" << strvalue << "\"" << endl;
+                }
+            }
+        }
+    }
 
+    if(raspberry_ip == "")
+    {
+        cout << "error: you need to set the raspberries ip in the config file like this (example): \"raspberry_ip=192.168.1.100\"" << endl;
+        return 1;
+    }
 
     // controls the resolution of the color space of the leds
     // default is 256, this is also configured in server.py
@@ -117,19 +193,17 @@ int main(void)
     int b_old = 0;
 
     // used for linear smoothing
-    int r_window[smoothing] = {0, 0, 0};
-    int g_window[smoothing] = {0, 0, 0};
-    int b_window[smoothing] = {0, 0, 0};
+    // paranthesis will initialize the array with zeros
+    int *r_window = new int[smoothing]();
+    int *g_window = new int[smoothing]();
+    int *b_window = new int[smoothing]();
 
     int i = 0;
 
     while(1)
     {
-        // XGetImage in c++ is the fastest solution i have come across
-        
-        // to make it even faster, ask for a single lines instead of a lot of points to reduce number of calls.
-        // asking for lines also makes it quite flexible in where to place lines for color checks.
-        // Asking for the whole screen is slow again. At least it seemed like that
+        // to make it faster, ask for a single lines instead of a lot of points to reduce number of calls to the X api.
+        // Asking for the whole screen is slow again.
 
         struct timeval start;
         gettimeofday(&start, NULL);
@@ -150,20 +224,20 @@ int main(void)
             
             // was XYPixmap
             // ZPixmap fixes cinnamon
-            image = XGetImage(d, root, 0, height/(lines+1)*i, width, 1, AllPlanes, ZPixmap);
+            image = XGetImage(d, root, 0, screen_height/(lines+1)*i, screen_width, 1, AllPlanes, ZPixmap);
             
             // e.g. is columns is 3, it will check the center pixel, and the centers between the center pixel and the two borders
-            for(int x = (width%columns)/2;x < width; x+=width/columns)
+            for(int x = (screen_width%columns)/2;x < screen_width; x+=screen_width/columns)
             {
                 c.pixel = XGetPixel(image, x, 0);
                 XQueryColor(d, colormap, &c);
-                // c contains colors that are by the factor 256 too large in their number
-                // when full_on was the standard of 256, then this formular will result in:
-                // 1*c.red/256
-                // for full_on = 2048 this is: 8*c.red/256
-                int c_r = (full_on/256)*c.red/256;
-                int c_g = (full_on/256)*c.green/256;
-                int c_b = (full_on/256)*c.blue/256;
+                // c contains colors that are by the factor 256 too large in their number.
+                // When full_on is e.g. 256, then this formular will result in:
+                // 255 * c.red / 256 / 256  =  1 * c.red / 256
+                // for full_on = 2048 this is: 8 * c.red / 256
+                int c_r = full_on * c.red / 256 / 256;
+                int c_g = full_on * c.green / 256 / 256;
+                int c_b = full_on * c.blue / 256 / 256;
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already
@@ -204,9 +278,9 @@ int main(void)
             // max with 1 to prevent division by zero
             int new_max = max(1, max(max(r, g), b));
             // normalize to old max value
-            r = (int)(r*old_max/new_max);
-            g = (int)(g*old_max/new_max);
-            b = (int)(b*old_max/new_max);
+            r = (int)(r * old_max / new_max);
+            g = (int)(g * old_max / new_max);
+            b = (int)(b * old_max / new_max);
             cout << "saturated color : " << r << " " << g << " " << b << endl;
         }
 
@@ -221,18 +295,18 @@ int main(void)
             if(old_max >= 0)
             {
                 int new_max = full_on;
-                r = r*(1-normalize) + r*new_max/old_max*normalize;
-                g = g*(1-normalize) + g*new_max/old_max*normalize;
-                b = b*(1-normalize) + b*new_max/old_max*normalize;
+                r = r * (1 - normalize) + r * new_max / old_max * normalize;
+                g = g * (1 - normalize) + g * new_max / old_max * normalize;
+                b = b * (1 - normalize) + b * new_max / old_max * normalize;
             }
             cout << "normalized color: " << r << " " << g << " " << b << endl;
         }
 
         // correct led color temperature
         // 1. gamma
-        if(gamma[0] > 0) r = (int)(pow((float)r/full_on, 1/gamma[0])*full_on);
-        if(gamma[1] > 0) g = (int)(pow((float)g/full_on, 1/gamma[1])*full_on);
-        if(gamma[2] > 0) b = (int)(pow((float)b/full_on, 1/gamma[2])*full_on);
+        if(gamma[0] > 0) r = (int)(pow((float)r / full_on, 1 / gamma[0]) * full_on);
+        if(gamma[1] > 0) g = (int)(pow((float)g / full_on, 1 / gamma[1]) * full_on);
+        if(gamma[2] > 0) b = (int)(pow((float)b / full_on, 1 / gamma[2]) * full_on);
         // 2. brightness
         r = (int)(r * brightness[0]);
         g = (int)(g * brightness[1]);
@@ -267,9 +341,9 @@ int main(void)
             }
             else
             {
-                r = (r_old * smoothing + r)/(smoothing + 1);
-                g = (g_old * smoothing + g)/(smoothing + 1);
-                b = (b_old * smoothing + b)/(smoothing + 1);
+                r = (r_old * smoothing + r) / (smoothing + 1);
+                g = (g_old * smoothing + g) / (smoothing + 1);
+                b = (b_old * smoothing + b) / (smoothing + 1);
                 r_old = r;
                 g_old = g;
                 b_old = b;
@@ -288,7 +362,7 @@ int main(void)
         }
 
         // send to the server for display
-        sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second);
+        sendcolor(r, g, b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second);
 
         // 1000000 is one second
         // this of course greatly affects performance
@@ -302,7 +376,7 @@ int main(void)
         cout << endl;
         // try to check the screen colors once every second (or whatever the checks_per_second param is)
         // so substract the delta or there might be too much waiting time between each check
-        usleep(max(0, 1000000/checks_per_second - delta));
+        usleep(max(0, 1000000 / checks_per_second - delta));
 
         // increment i, used for creating the window of colors for smoothing
         i ++;
