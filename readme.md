@@ -82,11 +82,11 @@ Once you know that the stuff is working you can go ahead and add it to autostart
 if you want (both server and client). This depends on your desktop environment and
 distro and hopefully you are able to find out how to do this on the internet.
 
-in order to automatically start the raspberry, I edited the file in `~/.config/lxsession//autostart` to:
+Set the Raspberries IP to a static one so that it does not have to be reconfigured
+later again. I did that in dhcpcd.conf, which has lots of comments and which is rather
+straightforward.
 
-## Future
-
-**1. single color mode**
+## Static Colors
 
 Just setting a single color once. At the moment this can be done by typing this:
 
@@ -96,13 +96,18 @@ Just setting a single color once. At the moment this can be done by typing this:
 
 into your browser (replace 192.168.2.110:8000 with your raspberries local ip and the port on which the server is running)
 
-**2. configuration tool**
+## Future
 
-Web frontend. Do some fancy javascript stuff like selecting a color from a color
-wheel. The web frontend has the pro, that it could be opened on the smartphone
-in order to change the rooms mood.
+**configuration tool**
 
-**3. visualize sound**
+GTK tool for color wheel selection, config editing, mode selection. I want to use GTK because I'm a fan of xfce.
+
+Signal to server when another client started fading, so that two clients are not conflicting each other and the old one
+can be stopped. For this, assign an id to each client and only fade, when the request comes in from the newest client id.
+
+Web Frontend that runs on the raspberry, which can be accessed from any device in order to set the color statically.
+
+**visualize sound**
 
 use one of the R, G and B channels for lows, mids and highs or something. Use bandpassing, lowcut and highcut for that.
 
