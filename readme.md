@@ -119,9 +119,6 @@ into your browser (replace 192.168.2.110:3546 with your raspberries local ip and
 
 GTK tool for color wheel selection, config editing, mode selection. I want to use GTK because I'm a fan of xfce.
 
-Signal to server when another client started fading, so that two clients are not conflicting each other and the old one
-can be stopped. For this, assign an id to each client and only fade, when the request comes in from the newest client id.
-
 Web Frontend that runs on the raspberry, which can be accessed from any device in order to set the color statically.
 
 **visualize sound**
