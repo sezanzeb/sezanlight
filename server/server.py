@@ -68,8 +68,8 @@ pi.set_PWM_range(gpio_b, full_on)
 
 # current client id, used to stop the connection to old
 # connections, when a new client starts sending screen info
-current_client_id = 0
-stop_client_id = -1
+current_client_id = -1
+stop_client_ids = []
 
 # response codes
 OK = b'1'
@@ -123,7 +123,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         global r_target, g_target, b_target
         global r_start, g_start, b_start
         global fader
-        global stop_client_id, current_client_id
+        global stop_client_ids, current_client_id
 
         url = self.path # /?r=128&g=128&b=128
 
@@ -147,17 +147,26 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return
         # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
-        if params['mode'] == SCREEN_COLOR:
-            if 'id' in params:
-                if stop_client_id == params['id']:
-                    # request shutdown of the old client
-                    print('closing connection to', stop_client_id)
+        # 1. stop old connections when new connections arrive
+        # 2. don't reject new connections because when an old connection is
+        # dead some timeout would have to be checked and stuff. Might be even more
+        # complex than what I'm doing at the moment.
+        if 'id' in params and 'mode' in params and params['mode'] == SCREEN_COLOR:
+            # first connected client ever?
+            if current_client_id == -1:
+                current_client_id = params['id']
+            else:
+                # if id in stoplist, then stop and reject
+                if params['id'] in stop_client_ids:
+                    print('closing connection to', params['id'])
+                    stop_client_ids.remove(params['id'])
                     self.wfile.write(CLOSE)
                     return
-
-                if current_client_id != params['id']:
-                    # write down who the current supplier of colors is
-                    stop_client_id = current_client_id
+                # if not in stop_client_ids and not the current client?
+                # then it's a new client. prepare to accept from the new client
+                elif current_client_id != params['id']:
+                    # stop the old client
+                    stop_client_ids += [current_client_id]
                     current_client_id = params['id']
                     print('new connection from', current_client_id)
 

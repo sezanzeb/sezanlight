@@ -61,7 +61,13 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
 
         if(readBuffer == CLOSE)
         {
-            cout << "server closed connection to this client due to a new connection from a different client" << endl;
+            cout << "server closed connection with this client to prevent duplicate connections. Another client started sending to the server!" << endl;
+            exit(1);
+        }
+
+        if(readBuffer == "")
+        {
+            cout << "server not running!" << endl;
             exit(1);
         }
     }
