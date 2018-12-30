@@ -66,6 +66,20 @@ pi.set_PWM_range(gpio_r, full_on)
 pi.set_PWM_range(gpio_g, full_on)
 pi.set_PWM_range(gpio_b, full_on)
 
+# current client id, used to stop the connection to old
+# connections, when a new client starts sending screen info
+current_client_id = 0
+stop_client_id = -1
+
+# response codes
+OK = b'1'
+ERROR = b'0'
+CLOSE = b'2'
+
+# color modes
+SCREEN_COLOR = 1
+STATIC = 2
+
 def fade():
 
     # going to overwrite those globally
@@ -109,6 +123,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         global r_target, g_target, b_target
         global r_start, g_start, b_start
         global fader
+        global stop_client_id, current_client_id
 
         url = self.path # /?r=128&g=128&b=128
 
@@ -116,10 +131,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         params_split = url[2:].split('&')
-        # example: ['r=048', 'g=1024.3', 'b=0', 'cps=1']
         i = 0
-        # default params:
-        params = {'r': 0, 'g': 0, 'b': 0, 'cps': 1}
+        # example: ['r=048', 'g=1024.3', 'b=0', 'cps=1']
+        # keep current color by default if one channel is missing in the request:
+        params = {'r': r, 'g': g, 'b': b, 'cps': 1}
         try:
             while i < len(params_split):
                 key, value = params_split[i].split('=')
@@ -127,10 +142,24 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 params[key] = int(float(value))
                 i += 1
         except:
-            self.wfile.write(b'0')
+            self.wfile.write(ERROR)
             print('could not parse:', url, 'format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"')
             return
         # is now: {r: 48, g: 1024, b: 0, cps: 1}
+
+        if params['mode'] == SCREEN_COLOR:
+            if 'id' in params:
+                if stop_client_id == params['id']:
+                    # request shutdown of the old client
+                    print('closing connection to', stop_client_id)
+                    self.wfile.write(CLOSE)
+                    return
+
+                if current_client_id != params['id']:
+                    # write down who the current supplier of colors is
+                    stop_client_id = current_client_id
+                    current_client_id = params['id']
+                    print('new connection from', current_client_id)
 
         checks_per_second = max(1, params['cps'])
         checks = max(1, int(frequency/checks_per_second)-1)
@@ -157,7 +186,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         b_start = max(0, min(full_on, b))
 
         # send ok
-        self.wfile.write(b'1')
+        self.wfile.write(OK)
 
 print('listening on', raspberry_ip + ':' + str(raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)

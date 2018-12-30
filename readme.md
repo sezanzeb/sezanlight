@@ -15,6 +15,9 @@ extra weight on those with high saturation and high lightness.
 
 ## Usage
 
+If this guide for some reason does not seem to be clear to you, if you are stuck or if something doesn't work,
+don't hesitate to submit an issue on github.
+
 **1. set up your LEDs**
 
 My RGB-strip setup is this one: https://dordnung.de/raspberrypi-ledstrip/
@@ -51,10 +54,6 @@ It's usually something starting with 192.168.
 Open the file called "config" on the client, insert the raspberries ip like this (example):
 
 raspberry_ip=192.168.1.100
-
-And also insert the recently figured out ip of your raspberry
-
-Copy the config file over to the raspberry server
 
 **4. Client**
 
