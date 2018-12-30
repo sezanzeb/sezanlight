@@ -63,6 +63,8 @@ Your htpc/pc/laptop running X11 and on which you watch videos:
 cd client && make && ./client.o
 ```
 
+Note, that the client stops sending when the server cannot be reached anymore.
+
 **5. Server**
 
 Your raspberry
@@ -71,6 +73,11 @@ Your raspberry
 sudo pigpiod
 python3 server/server.py
 ```
+
+The server accepts the colors from the most recently seen client and rejects colors
+from older clients afterwards. As long as you don't have flatmates that try to mess with your
+LEDs, this should be fine. (This also makes development for me easier as I don't have to take
+care about stopping old clients anymore that run on a different machine)
 
 **6. (optional) Add to autostart**
 
