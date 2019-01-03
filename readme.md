@@ -103,15 +103,17 @@ straightforward.
 (It might be noteworthy that this breaks the internet connection of my pi,
 but for some people it doesn't. But I was still able to connect to the local network so with scp I was able to update the pi's server software.)
 
-## Static Colors
+## Static Colors (Web Frontend)
 
-Just setting a single color once. At the moment this can be done by typing this:
+Just setting a single color once. Type
 
 ```
-192.168.2.110:3546?r=2048&g=1024&b=0&cps=2
+192.168.2.110:3546
 ```
 
 into your browser (replace 192.168.2.110:3546 with your raspberries local ip and the port on which the server is running)
+
+and use the web tool
 
 ## Future
 

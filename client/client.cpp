@@ -24,9 +24,9 @@
 #define STATIC 2
 
 // error codes
-#define OK = "1"
-#define ERROR "0"
-#define CLOSE "2"
+#define OK = 200
+#define ERROR 500
+#define CONFLICT 409
 
 // for how long was no answer received from the server?
 float timeout = 0;
@@ -59,19 +59,22 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
     if(curl)
     {
         char url[100];
-        sprintf(url, "%s:%d?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%d", ip, port, r, g, b, checks_per_second, client_id, mode);
+        sprintf(url, "%s:%d/api/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%d", ip, port, r, g, b, checks_per_second, client_id, mode);
         cout << "sending GET pramas: " << url << "\n";
 
         long int start = get_us();
         string readBuffer;
         curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, max_timeout);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         CURLcode status = curl_easy_perform(curl);
+        long http_code = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
         curl_easy_cleanup(curl);
 
-        if(readBuffer == CLOSE)
+        if(http_code == CONFLICT)
         {
             cout << "server closed connection with this client to prevent duplicate connections. Another client started sending to the server!" << endl;
             exit(1);

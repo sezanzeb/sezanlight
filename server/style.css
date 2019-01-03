@@ -1,0 +1,19 @@
+body {
+    background: #111;
+    color: #fff;
+    font-family: sans-serif;
+    text-align: center;
+    margin: 50px;
+}
+
+label {
+    margin-right: 10px;
+}
+
+input, button {
+    background: #222;
+    color: white;
+    border: 1px solid black;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
