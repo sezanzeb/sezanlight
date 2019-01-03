@@ -14,12 +14,12 @@ screen_height=1080
 increase_saturation= 0.67
 normalize=0
 lines = 3
-columns=50
-smoothing= 2
+columns=100
+smoothing= 3
 checks_per_second=1 
 brightness= 1.00,0.85, 0.5
 gamma =1.10, 0.88,0.7
-linear_smoothing=0
+linear_smoothing=1
 
 # raspberry server (this config does not work yet):
 # probably going to send this to the raspberry so only one config file

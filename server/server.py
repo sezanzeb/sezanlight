@@ -61,10 +61,13 @@ raspberry_port = 3546
 
 # higher resolution for color changes
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
-full_on = 2048
+full_on = 20000
 pi.set_PWM_range(gpio_r, full_on)
 pi.set_PWM_range(gpio_g, full_on)
 pi.set_PWM_range(gpio_b, full_on)
+pi.set_PWM_frequency(gpio_r, 400)
+pi.set_PWM_frequency(gpio_g, 400)
+pi.set_PWM_frequency(gpio_b, 400)
 
 # current client id, used to stop the connection to old
 # connections, when a new client starts sending screen info
@@ -96,9 +99,9 @@ def fade():
                 # so that a fading effect is created.
                 # Overwrite globals r, g and b so that when fading restarts,
                 # that is going to be the new starting color.
-                r = int(r_start*(1-f) + r_target*(f))
-                g = int(g_start*(1-f) + g_target*(f))
-                b = int(b_start*(1-f) + b_target*(f))
+                r = (r_start*(1-f) + r_target*(f))
+                g = (g_start*(1-f) + g_target*(f))
+                b = (b_start*(1-f) + b_target*(f))
                 pi.set_PWM_dutycycle(gpio_r, r)
                 pi.set_PWM_dutycycle(gpio_g, g)
                 pi.set_PWM_dutycycle(gpio_b, b)  
