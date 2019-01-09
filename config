@@ -9,8 +9,8 @@ raspberry_port=3546
 
 # client:
 raspberry_ip= 192.168.2.50
-screen_width=1920
-screen_height=1080
+screen_width=1366
+screen_height=768
 increase_saturation= 0.67
 normalize=0
 lines = 3

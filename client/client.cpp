@@ -8,7 +8,6 @@
 // https://stackoverflow.com/questions/9786150/save-curl-content-result-into-a-string-in-c
 // https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
 // https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c#7868998
-// https://stackoverflow.com/questions/3578083/what-is-the-best-way-to-use-a-hashmap-in-c
 // https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
 
 #include <X11/Xlib.h>
@@ -59,7 +58,7 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
     if(curl)
     {
         char url[100];
-        sprintf(url, "%s:%d/api/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%d", ip, port, r, g, b, checks_per_second, client_id, mode);
+        sprintf(url, "%s:%d/color/set/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%d", ip, port, r, g, b, checks_per_second, client_id, mode);
         cout << "sending GET pramas: " << url << "\n";
 
         long int start = get_us();
@@ -154,7 +153,7 @@ int main(void)
     // setting it to true will basically favor saturated colors over grey ones during normalization
     bool normalize_sum = true;
     // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
-    float increase_saturation = 0.67;
+    float increase_saturation = 0.4;
 
     // try to prevent suddenly jumping colors when
     // changing from e.g. <10, 11, 10> to <10, 10, 10>

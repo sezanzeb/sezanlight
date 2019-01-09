@@ -1,0 +1,31 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides: sezanlight
+# Required-Start: $syslog
+# Required-Stop: $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: sezanlight server
+# Description:
+### END INIT INFO
+
+case "$1" in
+
+    start)
+        sudo pigpiod
+        python3 /home/pi/sezanlight/server/server.py &
+        return 0
+        ;;
+
+    stop)
+        pkill -9 -f sezanlight/server/server.py
+        return 0
+        ;;
+
+    *)
+        echo "Use: sudo service sezanlight {start|stop}"
+        exit 1
+        ;;
+esac
+ 
+exit 0

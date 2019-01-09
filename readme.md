@@ -8,7 +8,7 @@ Therefore It's rather fast. It sparsly checks a few places on the screen (150 pi
 extra weight on those with high saturation and high lightness.
 
 **worked with:**
-- manjaro xfce (using compton)
+- manjaro xfce
 
 **somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
@@ -30,15 +30,13 @@ Clone this repo on your pc and on your raspberry
 git clone https://github.com/sezanzeb/sezanlight.git
 ```
 
-on your client (the X11 device you use to watch videos, etc.), install the xlib development headers
+on your client (the X11 device you use to watch videos, etc.), install the xlib and boost development headers
+
+but I assume i'll write my own string trimming function later in order to remove the boost dependency
 
 ```
 # arch/manjaro:
-sudo pacman -S curl
-```
-```
-# on debian/ubuntu, it probably is:
-sudo apt install libcurl-dev
+sudo pacman -S curl boost
 ```
 
 **3. configuration**
@@ -85,23 +83,27 @@ Once you know that the stuff is working you can go ahead and add it to autostart
 if you want (both server and client). This depends on your desktop environment and
 distro and hopefully you are able to find out how to do this on the internet.
 
-Tutorial for raspberry: https://tutorials-raspberrypi.com/raspberry-pi-autostart-start-program-automatically/
+Assuming you are running Raspbian on your pi (Debian based):
 
-```
-# see link above for complete contents of file
-# part of the contents of /etc/init.d/sezanlight
-case "$1" in
-    start)
-        sudo pigpiod
-        python3 /home/pi/sezanlight/server/server.py
+```bash
+sudo cp initscript /etc/init.d/sezanlight
+sudo sudo chmod 755 /etc/init.d/sezanlight
+sudo update-rc.d sezanlight defaults
 ```
 
-Set the Raspberries IP to a static one so that it does not have to be reconfigured
-later again. I did that in dhcpcd.conf, which has lots of comments and which is rather
-straightforward.
+To test if the init file works at all:
 
-(It might be noteworthy that this breaks the internet connection of my pi,
-but for some people it doesn't. But I was still able to connect to the local network so with scp I was able to update the pi's server software.)
+```bash
+sudo service sezanlight start
+```
+
+Set the Raspberries IP to a static one so that the client does not have to be reconfigured
+later again. I did that in the raspberries dhcpcd.conf, which has lots of comments and
+which is rather straightforward.
+
+(It might be noteworthy that this breaks the internet connection of my pi, but for
+some people it doesn't. But I was still able to connect to the local network so with
+scp and ssh I was able to update the pi's server software.)
 
 ## Static Colors (Web Frontend)
 

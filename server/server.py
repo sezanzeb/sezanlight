@@ -17,12 +17,24 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import re
 import pigpio
 import time
-from threading import Thread
+from threading import Thread, Semaphore
+import logging
+from pathlib import Path
 
-pi = pigpio.pi()
+staticfiles = str(Path(Path(__file__).parent, 'static'))
+logfile = str(Path(Path(__file__).parent, 'log'))
+logger = logging.getLogger('sezanlight')
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(logfile)
+handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+logger.addHandler(handler)
 
-# the fadpything thread
+# the fading thread
 fader_thread = None
+
+# use a semaphore in order not to update some color variables while some
+# fading calculation is in progress
+working_on_color = Semaphore()
 
 # current color during fading and statically
 r = 0
@@ -62,6 +74,7 @@ raspberry_port = 3546
 # higher resolution for color changes
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
 full_on = 20000
+pi = pigpio.pi()
 pi.set_PWM_range(gpio_r, full_on)
 pi.set_PWM_range(gpio_g, full_on)
 pi.set_PWM_range(gpio_b, full_on)
@@ -93,6 +106,8 @@ def fade_loop():
     while True:
         start = time.time()
         # f will move from 0 to 1
+        
+        working_on_color.acquire()
         if checks > 1:
             fade_state += 1/checks
 
@@ -107,13 +122,14 @@ def fade_loop():
                 pi.set_PWM_dutycycle(gpio_r, r)
                 pi.set_PWM_dutycycle(gpio_g, g)
                 pi.set_PWM_dutycycle(gpio_b, b)  
-                # print(r, g, b)
+                # logger.info('{} {} {}'.format(r, g, b))
 
             else:
                 pi.set_PWM_dutycycle(gpio_r, r_target)
                 pi.set_PWM_dutycycle(gpio_g, g_target)
                 pi.set_PWM_dutycycle(gpio_b, b_target)
                 pass
+        working_on_color.release()
 
         delta = time.time()-start
         time.sleep(max(0, 1/checks_per_second/(checks+1)-delta))
@@ -131,13 +147,20 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         url = self.path # /?r=128&g=128&b=128
 
-        if url == '/':
-            url = 'index.html'
+        logger.info('request for {}'.format(url))
 
-        allowed_types = ['.css', '.js', '.ico', '.png', '.jpg', '.html']
+        if url == '/':
+            url = '/index.html'
+
+        allowed_types = {'.css':'text/css',
+                        '.html':'text/html',
+                        '.js':'text/javascript',
+                        '.jpg':'image/jpeg',
+                        '.png':'image/png',
+                        '.ico':'image/x-icon'}
 
         # if not a file request
-        if url.startswith('/api/'):
+        if url.startswith('/color/set/'):
 
             global r, g, b
             global checks_per_second, checks, fade_state
@@ -160,7 +183,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             except:
                 self.send_response(CONFLICT)
                 self.end_headers()
-                print('could not parse:', url, 'format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"')
+                logger.info('could not parse: {} format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"'.format(url))
                 return
             # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
@@ -175,7 +198,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 else:
                     # if id in stoplist, then stop and reject
                     if params['id'] in stop_client_ids:
-                        print('closing connection to', params['id'])
+                        logger.info('closing connection to {}'.format(params['id']))
                         stop_client_ids.remove(params['id'])
                         self.send_response(CONFLICT)
                         self.end_headers()
@@ -186,7 +209,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                         # stop the old client
                         stop_client_ids += [current_client_id]
                         current_client_id = params['id']
-                        print('new connection from', current_client_id)
+                        logger.info('new connection from {}'.format(current_client_id))
 
             # if a static color request was received,
             # stop the client that is currently feeding colors from a screen
@@ -195,8 +218,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 if current_client_id != -1:
                     # stop the old client
                     stop_client_ids += [current_client_id]
-                    print('received static color', current_client_id)
+                    logger.info('received static color')
 
+            working_on_color.acquire()
             checks_per_second = max(1, params['cps'])
             checks = max(1, int(frequency/checks_per_second)-1)
 
@@ -207,7 +231,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # processes (shared between threads) memory that are used for fading:
             if fader_thread is None or not fader_thread.is_alive():
                 # also check if still alive, restart if not
-                print('starting fader')
+                logger.info('starting fader')
                 fader_thread = Thread(target=fade_loop)
                 fader_thread.start()
             # only put valid parameters into rgb_target and _start, as the
@@ -220,42 +244,55 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             r_start = max(0, min(full_on, r))
             g_start = max(0, min(full_on, g))
             b_start = max(0, min(full_on, b))
+            working_on_color.release()
 
             # send ok
             self.send_response(OK)
             self.end_headers()
 
-            if is_static_color(params):
-                # send index.html for the web frontend, which triggers
-                # the browser to request style.css and stuff
-                with open('index.html', 'rb') as index:
-                    self.wfile.write(index.read())
+        elif url.startswith('/color/get'):
+            logger.info('request to read the current LED colors')
+            self.send_response(OK)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            # just send what the current color is
+            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(int(r*255/full_on),
+                                                                     int(g*255/full_on),
+                                                                     int(b*255/full_on)),
+                                                                     'utf-8'))
 
         elif url[url.rfind('.'):] in allowed_types:
-            print('file request')
+
+            filename = staticfiles + url
+            filetype = url[url.rfind('.'):]
+
+            logger.info('file request for {}'.format(filename))
             # send css and js files upon request
             
             # make sure the request is not doing weird stuff in the url
+            # no subdirectories (because there are none) and no going back
             url = url.replace('/', '').replace('..', '')
 
             contents = b''
 
             try:
-                with open(url, 'rb') as f:
+                with open(filename, 'rb') as f:
                     contents = f.read()
             except FileNotFoundError:
+                logger.info('file not found!')
                 self.send_response(NOTFOUND)
                 self.end_headers()
                 return
 
             # send ok
             self.send_response(OK)
+            self.send_header('Content-type', allowed_types[filetype])
             self.end_headers()
             # send file
             self.wfile.write(contents)
 
         else:
-            print('invalid request')
+            logger.info('invalid request!')
             # was not a valid request
             self.send_response(BADREQUEST)
             self.end_headers()
@@ -263,7 +300,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
 
 
-print('listening on', raspberry_ip + ':' + str(raspberry_port))
+logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
 httpd.serve_forever()
 
