@@ -39,8 +39,6 @@ but I assume i'll write my own string trimming function later in order to remove
 sudo pacman -S curl boost
 ```
 
-TODO: Deploy debian based client and see which apt packages need to be installed
-
 **3. configuration**
 
 In order to setup the config file, find out the ip of your raspberry using (execute on the raspberry):
@@ -55,10 +53,17 @@ Open the file called "config" on the client, insert the raspberries ip like this
 
 raspberry_ip=192.168.1.100
 
-Also adjust the screen resolution in the config file, especially if it is higher than your
-screens resolution, as that would cause the client to crash.
+**4. Client**
 
-**4. Server**
+Your htpc/pc/laptop running X11 and on which you watch videos:
+
+```
+cd client && make && ./client.o
+```
+
+Note, that the client stops sending when the server cannot be reached anymore.
+
+**5. Server**
 
 Your raspberry
 
@@ -71,16 +76,6 @@ The server accepts the colors from the most recently seen client and rejects col
 from older clients afterwards. As long as you don't have flatmates that try to mess with your
 LEDs, this should be fine. (This also makes development for me easier as I don't have to take
 care about stopping old clients anymore that run on a different machine)
-
-**5. Client**
-
-Your htpc/pc/laptop running X11 and on which you watch videos:
-
-```
-cd client && make && ./client.o
-```
-
-Note, that the client stops sending when the server cannot be reached anymore.
 
 **6. (optional) Add to autostart**
 
@@ -101,8 +96,6 @@ To test if the init file works at all:
 ```bash
 sudo service sezanlight start
 ```
-
-and see if you can start the client and send colors to it.
 
 Set the Raspberries IP to a static one so that the client does not have to be reconfigured
 later again. I did that in the raspberries dhcpcd.conf, which has lots of comments and
@@ -128,7 +121,9 @@ and use the web tool
 
 **configuration tool**
 
-GTK tool for color wheel selection, config editing, starting of screen color capturing. I want to use GTK because I'm a fan of xfce.
+GTK tool for color wheel selection, config editing, mode selection. I want to use GTK because I'm a fan of xfce.
+
+Web Frontend that runs on the raspberry, which can be accessed from any device in order to set the color statically.
 
 **visualize sound**
 

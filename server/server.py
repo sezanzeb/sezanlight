@@ -218,7 +218,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 if current_client_id != -1:
                     # stop the old client
                     stop_client_ids += [current_client_id]
-                    logger.info('received static color')
+                    logger.info('received static color {}'.format(current_client_id))
 
             working_on_color.acquire()
             checks_per_second = max(1, params['cps'])
