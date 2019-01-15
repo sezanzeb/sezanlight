@@ -1,29 +1,33 @@
 # sezanlight configuration file
-# note, that the whitespaces are there only to test if the client breaks
-# they are not required
 
-# for both server and client:
+# (the server doesn't read from this config file yet, there, the port and gpio pins are hard-coded)
 # for the port I just went with some random unassigned port from this list:
 # https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
 raspberry_port=3546
-
-# client:
-raspberry_ip= 192.168.2.50
-screen_width=1366
-screen_height=768
-increase_saturation= 0.67
-normalize=0
-lines = 3
-columns=100
-smoothing= 4
-checks_per_second=2
-brightness= 1.00,0.85, 0.5
-gamma =1.10, 0.88,0.7
-linear_smoothing=1
-
-# raspberry server (this config does not work yet):
-# probably going to send this to the raspberry so only one config file
-# is relevant
 gpio_r=17
 gpio_g=22
 gpio_b=24
+
+raspberry_ip=192.168.2.50
+
+# how to read the screen:
+screen_width=1920
+screen_height=1080
+lines=5
+columns=50
+
+# smoothing
+smoothing=3
+checks_per_second=2 
+linear_smoothing=1
+
+# color temperature
+gamma=1.10,0.88,0.7
+# brightness=1.00,0.85,0.5
+# for movies, set the LEDs a bit darker (also depends on the number of LEDs):
+brightness=0.50,0.425,0.25
+
+# some other filters
+increase_saturation=0.5
+normalize=0
+

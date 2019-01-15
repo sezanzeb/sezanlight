@@ -107,17 +107,19 @@ void parse_float_array(string strvalue, int size, float *array)
     // more complicated stuff, one float per channel in array
     int channel = 0;
     int j = 0;
+    // remember last comma position
+    int start = 0;
     while(true)
     {
         if(strvalue[j] == ',' or strvalue[j] == '\0')
         {
-            cout << channel << endl;
-            float value = atof(strvalue.substr(0, j).c_str());
+            float value = atof(strvalue.substr(start, j).c_str());
             array[channel] = value;
             channel ++;
+            start = j+1;
         }
+        if(strvalue[j] == '\0') break;
         j++;
-        if(strvalue[j] != '\0') break;
     }
 }
 
@@ -155,16 +157,17 @@ int main(void)
     // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
     float increase_saturation = 0.4;
 
-    // try to prevent suddenly jumping colors when
-    // changing from e.g. <10, 11, 10> to <10, 10, 10>
-    // if below this level, set to black
-    int black_threshold = 30;
-
     // overwrite default params with params from config file
     ifstream infile("../config");
     string line;
     while (std::getline(infile, line))
     {
+        boost::trim(line);
+
+        // skip comments
+        if(line[0] == '#')
+            continue;
+
         // search for equal symbol
         for(int i = 0; line[i] != '\0'; i++)
         {
@@ -193,7 +196,6 @@ int main(void)
                     else if(key == "brightness") parse_float_array(strvalue, 3, brightness);
                     else if(key == "gamma") parse_float_array(strvalue, 3, gamma);
                     else if(key == "linear_smoothing") linear_smoothing = stoi(strvalue);
-                    else if(key == "black_threshold") black_threshold = stoi(strvalue);
                 }
                 catch (invalid_argument e)
                 {
@@ -305,6 +307,7 @@ int main(void)
                 // and also favor light ones over dark ones
                 int lightness = (c_r + c_g + c_b)/3;
                 // lightness and diff are between 0 and full_on
+                lightness = 0;
                 float weight = (float)(diff + lightness)/2/128 + 1; // between 1 and 16 (full_on/128)
                 normalizer += weight;
                 r_line += c_r * weight;
@@ -422,15 +425,31 @@ int main(void)
             r = min(full_on, max(0u, r));
             g = min(full_on, max(0u, g));
             b = min(full_on, max(0u, b));
-            cout << "filtered color  : " << r << " " << g << " " << b << endl;
+            cout << "temperature fix : " << r << " " << g << " " << b << endl;
 
-            // turn off leds for values that are too dark
-            if(r+g+b < black_threshold*3)
+
+            // for VERY dark colors, don't shove those changes onto the color too much
+            // and also make it more gray to prevent supersaturated colors like (0, 1, 0).
+            // for this, have a float filter_Strength that is between 0.4 and 1 for dark colors,
+            // and 1 for all other colors.
+            float darkness_threshold = 0.1;
+            float darkness = (float)((r_old + g_old + b_old) / 3) / full_on;
+            float filter_strength = max(0.4f, min(darkness_threshold, darkness) / darkness_threshold);
+            float greyscaling = max(0.0f, min(darkness_threshold, darkness) / darkness_threshold);
+            if(greyscaling < 1 or filter_strength < 1)
             {
-                r = 0;
-                g = 0;
-                b = 0;
-                cout << "setting to black" << endl;
+                // for super dark colors, just use gray
+                if(darkness < 0.01) greyscaling = 0;
+                // 1. reverse the filters a bit for dark colors 
+                r = (filter_strength) * r + (1-filter_strength) * r_old;
+                g = (filter_strength) * g + (1-filter_strength) * g_old;
+                b = (filter_strength) * b + (1-filter_strength) * b_old;
+                // 2. make dark colors more grey
+                int mean = (r + g + b ) / 3;
+                r = (greyscaling) * r + (1-greyscaling) * mean;
+                g = (greyscaling) * g + (1-greyscaling) * mean;
+                b = (greyscaling) * b + (1-greyscaling) * mean;
+                cout << "dark color fix  : " << r << " " << g << " " << b << endl;
             }
 
             // send to the server for display
