@@ -340,15 +340,19 @@ int main(void)
             XFree(image);
         }
 
+        // now divide by number of datapoints
+        // in order to calculate the mean for each cluster
+        // actually it would be sufficient to do this only for the
+        // largest cluster, but for debugging stuff and bla at the moment
+        // i do it for every cluster for log messages.
+        // (TODO 1.0 do it only for the largest)
         for(int n = 0;n < num_centroids; n++)
         {
             centroids[n][0] = centroids[n][0] / cluster_sizes[n];
             centroids[n][1] = centroids[n][1] / cluster_sizes[n];
             centroids[n][2] = centroids[n][2] / cluster_sizes[n];
+            // cout << "c" << n << " color        : " << (int)centroids[n][0] << " " << (int)centroids[n][1] << " " << (int)centroids[n][2] << " size: " << cluster_sizes[n] << endl;
         }
-        /*cout << "c1 color        : " << (int)centroids[0][0] << " " << (int)centroids[0][1] << " " << (int)centroids[0][2] << " size: " << cluster_sizes[0] << endl;
-        cout << "c2 color        : " << (int)centroids[1][0] << " " << (int)centroids[1][1] << " " << (int)centroids[1][2] << " size: " << cluster_sizes[1] << endl;
-        cout << "c3 color        : " << (int)centroids[2][0] << " " << (int)centroids[2][1] << " " << (int)centroids[2][2] << " size: " << cluster_sizes[2] << endl;*/
 
         // r g and b are now between 0 and full_on
         int largest_cluster = 0;
