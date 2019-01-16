@@ -220,7 +220,7 @@ int main(void)
 
     // controls the resolution of the color space of the leds
     // default is 256, this is also configured in server.py
-    unsigned int full_on = 20000;
+    const unsigned int full_on = 20000;
 
     // some checking for broken configurations
     if(lines == 0)
@@ -261,11 +261,19 @@ int main(void)
 
     int i = 0;
 
+    int num_datapoints = lines * columns;
+
     // loop forever, reading the screen
     while(true)
     {
 
         long int start = get_us();
+
+        // k-means
+        // red, green and blue as starting colors
+        double centroids[3][3] = {{full_on, 0, 0}, {0, full_on, 0}, {0, 0, full_on}};
+        const int num_centroids = 3;
+        int cluster_sizes[3] = {1, 1, 1};
 
         unsigned int r = 1;
         unsigned int g = 1;
@@ -275,10 +283,10 @@ int main(void)
         for(int i = 1;i <= lines;i++)
         {
             // to prevent overflows, aggregate color for each line individually
-            unsigned long int r_line = 0;
+            /*unsigned long int r_line = 0;
             unsigned long int g_line = 0;
             unsigned long int b_line = 0;
-            float normalizer = 0;
+            float normalizer = 0;*/
             
             // ZPixmap fixes xorg color reading on cinnamon a little bit (as opposed to XYPixmap)
             // some info on XGetImage + XGetPixel speed:
@@ -300,33 +308,74 @@ int main(void)
                 unsigned int c_r = full_on * c.red / 256 / 256;
                 unsigned int c_g = full_on * c.green / 256 / 256;
                 unsigned int c_b = full_on * c.blue / 256 / 256;
+
+                // figure out the closest centroid
+                unsigned int shortest_distance = full_on * 3;
+                int closest_centroid = 0;
+                for(int n = 0;n < num_centroids; n++)
+                {
+                    // for each datapoint (screen color pixel)
+                    // and for each centroid
+                    // fast cityblock distance
+                    unsigned int centroid_r = centroids[n][0] / cluster_sizes[closest_centroid];
+                    unsigned int centroid_g = centroids[n][1] / cluster_sizes[closest_centroid];
+                    unsigned int centroid_b = centroids[n][2] / cluster_sizes[closest_centroid];
+                    unsigned int distance = abs((int)(centroid_r - c_r)) + abs((int)(centroid_g - c_g)) + abs((int)(centroid_b - c_b));
+                    if(distance < shortest_distance)
+                    {
+                        closest_centroid = n;
+                        shortest_distance = distance;
+                    }
+                }
+
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already
                 int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)));
-                // and also favor light ones over dark ones
-                int lightness = (c_r + c_g + c_b)/3;
-                // lightness and diff are between 0 and full_on
-                lightness = 0;
-                float weight = (float)(diff + lightness)/2/128 + 1; // between 1 and 16 (full_on/128)
-                normalizer += weight;
-                r_line += c_r * weight;
-                g_line += c_g * weight;
-                b_line += c_b * weight;
+                float weight = diff * 20 / full_on + 1; // between 1 and 21
+
+                // move that centroid towards the datapoint/color by 1/num_datapoints
+                centroids[closest_centroid][0] += c_r * weight;
+                centroids[closest_centroid][1] += c_g * weight;
+                centroids[closest_centroid][2] += c_b * weight;
+                cluster_sizes[closest_centroid] += weight;
             }
 
             // free up memory to prevent leak
             XFree(image);
 
-            r += r_line / normalizer;
+            /*r += r_line / normalizer;
             g += g_line / normalizer;
-            b += b_line / normalizer;
+            b += b_line / normalizer;*/
         }
 
+        for(int n = 0;n < num_centroids; n++)
+        {
+            centroids[n][0] = centroids[n][0] / cluster_sizes[n];
+            centroids[n][1] = centroids[n][1] / cluster_sizes[n];
+            centroids[n][2] = centroids[n][2] / cluster_sizes[n];
+        }
+        cout << "c1 color        : " << (int)centroids[0][0] << " " << (int)centroids[0][1] << " " << (int)centroids[0][2] << " size: " << cluster_sizes[0] << endl;
+        cout << "c2 color        : " << (int)centroids[1][0] << " " << (int)centroids[1][1] << " " << (int)centroids[1][2] << " size: " << cluster_sizes[1] << endl;
+        cout << "c3 color        : " << (int)centroids[2][0] << " " << (int)centroids[2][1] << " " << (int)centroids[2][2] << " size: " << cluster_sizes[2] << endl;
+
         // r g and b are now between 0 and full_on
-        r = r/lines;
+        /*r = r/lines;
         g = g/lines;
-        b = b/lines;
+        b = b/lines;*/
+        int largest_cluster = 0;
+        int largest_size = 0;
+        for(int n = 0;n < num_centroids; n++)
+        {
+            if(cluster_sizes[n] > largest_size)
+            {
+                largest_cluster = n;
+                largest_size = cluster_sizes[n];
+            }
+        }
+        r = centroids[largest_cluster][0];
+        g = centroids[largest_cluster][1];
+        b = centroids[largest_cluster][2];
         cout << "observed color  : " << r << " " << g << " " << b << endl;
 
         // only do stuff if the color changed.

@@ -4,8 +4,11 @@ Reads your **X Window System Linux** screen contents and sends it to a remote ra
 rgb lights, which are controlled using one PWM gpio pin per R, G and B.
 
 Since there is only a single color that needs to be figured out, the whole process can be kept minimalistic.
-Therefore It's rather fast. It sparsly checks a few places on the screen (150 pixels by default) and puts
-extra weight on those with high saturation and high lightness.
+Therefore It's rather fast. It sparsly checks a few places on the screen and puts extra weight on those with
+high saturation.
+
+For color calculation, it uses k-means with 3 centroids in order not to mix two dominant colors together but
+rather to choose one of them for the LEDs.
 
 **worked with:**
 - manjaro xfce
