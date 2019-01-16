@@ -282,11 +282,6 @@ int main(void)
         // count three lines on the screen or something
         for(int i = 1;i <= lines;i++)
         {
-            // to prevent overflows, aggregate color for each line individually
-            /*unsigned long int r_line = 0;
-            unsigned long int g_line = 0;
-            unsigned long int b_line = 0;
-            float normalizer = 0;*/
             
             // ZPixmap fixes xorg color reading on cinnamon a little bit (as opposed to XYPixmap)
             // some info on XGetImage + XGetPixel speed:
@@ -343,10 +338,6 @@ int main(void)
 
             // free up memory to prevent leak
             XFree(image);
-
-            /*r += r_line / normalizer;
-            g += g_line / normalizer;
-            b += b_line / normalizer;*/
         }
 
         for(int n = 0;n < num_centroids; n++)
@@ -355,14 +346,11 @@ int main(void)
             centroids[n][1] = centroids[n][1] / cluster_sizes[n];
             centroids[n][2] = centroids[n][2] / cluster_sizes[n];
         }
-        cout << "c1 color        : " << (int)centroids[0][0] << " " << (int)centroids[0][1] << " " << (int)centroids[0][2] << " size: " << cluster_sizes[0] << endl;
+        /*cout << "c1 color        : " << (int)centroids[0][0] << " " << (int)centroids[0][1] << " " << (int)centroids[0][2] << " size: " << cluster_sizes[0] << endl;
         cout << "c2 color        : " << (int)centroids[1][0] << " " << (int)centroids[1][1] << " " << (int)centroids[1][2] << " size: " << cluster_sizes[1] << endl;
-        cout << "c3 color        : " << (int)centroids[2][0] << " " << (int)centroids[2][1] << " " << (int)centroids[2][2] << " size: " << cluster_sizes[2] << endl;
+        cout << "c3 color        : " << (int)centroids[2][0] << " " << (int)centroids[2][1] << " " << (int)centroids[2][2] << " size: " << cluster_sizes[2] << endl;*/
 
         // r g and b are now between 0 and full_on
-        /*r = r/lines;
-        g = g/lines;
-        b = b/lines;*/
         int largest_cluster = 0;
         int largest_size = 0;
         for(int n = 0;n < num_centroids; n++)
