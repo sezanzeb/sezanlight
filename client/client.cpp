@@ -220,7 +220,9 @@ int main(void)
 
     // controls the resolution of the color space of the leds
     // default is 256, this is also configured in server.py
-    unsigned int full_on = 20000;
+    // have this as float, because r, g and b are floats during
+    // filtering in order to improve type compatibility stuff.
+    const float full_on = 20000;
 
     // some checking for broken configurations
     if(lines == 0)
@@ -249,16 +251,16 @@ int main(void)
     // and for checking if the color even changed
     // so save raspberry cpu time and network
     // bandwidth
-    unsigned int r_old = 0;
-    unsigned int g_old = 0;
-    unsigned int b_old = 0;
+    float r_old = 0;
+    float g_old = 0;
+    float b_old = 0;
 
     // used for linear smoothing
     // paranthesis will initialize the array with zeros
-    unsigned int *r_window = new unsigned int[smoothing]();
-    unsigned int *g_window = new unsigned int[smoothing]();
-    unsigned int *b_window = new unsigned int[smoothing]();
-
+    float *r_window = new float[smoothing]();
+    float *g_window = new float[smoothing]();
+    float *b_window = new float[smoothing]();
+    // i is the current po
     int i = 0;
 
     // loop forever, reading the screen
@@ -267,18 +269,20 @@ int main(void)
 
         long int start = get_us();
 
-        unsigned int r = 1;
-        unsigned int g = 1;
-        unsigned int b = 1;
+        // work on floats in order to prevent rounding errors that add up
+        float r = 1;
+        float g = 1;
+        float b = 1;
 
         // count three lines on the screen or something
         for(int i = 1;i <= lines;i++)
         {
             // to prevent overflows, aggregate color for each line individually
-            unsigned long int r_line = 0;
-            unsigned long int g_line = 0;
-            unsigned long int b_line = 0;
-            float normalizer = 0;
+            // EDIT: that was needed when those variables were ints a long time ago
+            double r_line = 0;
+            double g_line = 0;
+            double b_line = 0;
+            double normalizer = 0;
             
             // ZPixmap fixes xorg color reading on cinnamon a little bit (as opposed to XYPixmap)
             // some info on XGetImage + XGetPixel speed:
@@ -297,18 +301,14 @@ int main(void)
                 // When full_on is e.g. 256, then this formular will result in:
                 // 255 * c.red / 256 / 256  =  1 * c.red / 256
                 // for full_on = 2048 this is: 8 * c.red / 256
-                unsigned int c_r = full_on * c.red / 256 / 256;
-                unsigned int c_g = full_on * c.green / 256 / 256;
-                unsigned int c_b = full_on * c.blue / 256 / 256;
+                int c_r = full_on * c.red / 256 / 256;
+                int c_g = full_on * c.green / 256 / 256;
+                int c_b = full_on * c.blue / 256 / 256;
                 // give saturated colors (like green, purple, blue, orange, ...) more weight
                 // over grey colors
                 // difference between lowest and highest value should do the trick already
                 int diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)));
-                // and also favor light ones over dark ones
-                int lightness = (c_r + c_g + c_b)/3;
-                // lightness and diff are between 0 and full_on
-                lightness = 0;
-                float weight = (float)(diff + lightness)/2/128 + 1; // between 1 and 16 (full_on/128)
+                double weight = diff * 20 / full_on + 1; // between 1 and 21
                 normalizer += weight;
                 r_line += c_r * weight;
                 g_line += c_g * weight;
@@ -324,9 +324,9 @@ int main(void)
         }
 
         // r g and b are now between 0 and full_on
-        r = r/lines;
-        g = g/lines;
-        b = b/lines;
+        r = r / lines;
+        g = g / lines;
+        b = b / lines;
         cout << "observed color  : " << r << " " << g << " " << b << endl;
 
         // only do stuff if the color changed.
@@ -380,13 +380,13 @@ int main(void)
             // increase saturation
             if(increase_saturation > 0)
             {
-                unsigned int min_val = min(min(r, g), b);
-                unsigned int old_max = max(max(r, g), b);
+                float min_val = min(min(r, g), b);
+                float old_max = max(max(r, g), b);
                 r -= min_val * increase_saturation;
                 g -= min_val * increase_saturation;
                 b -= min_val * increase_saturation;
                 // max with 1 to prevent division by zero
-                unsigned int new_max = max(1u, max(max(r, g), b));
+                float new_max = max((float)1, max(max(r, g), b));
                 // normalize to old max value
                 r = r * old_max / new_max;
                 g = g * old_max / new_max;
@@ -398,13 +398,13 @@ int main(void)
             {
                 // normalize it so that the lightest value is e.g. full_on
                 // max with 1 to prevent division by zero
-                unsigned int old_max;
+                float old_max;
                 if(normalize_sum) old_max = r + g + b;
                 else old_max = max(max(r, g), b);
-                old_max = max(1u, old_max);
+                old_max = max(0.0f, old_max);
                 if(old_max >= 0)
                 {
-                    int new_max = full_on;
+                    float new_max = full_on;
                     r = r * (1 - normalize) + r * new_max / old_max * normalize;
                     g = g * (1 - normalize) + g * new_max / old_max * normalize;
                     b = b * (1 - normalize) + b * new_max / old_max * normalize;
@@ -414,46 +414,47 @@ int main(void)
 
             // correct led color temperature
             // 1. gamma
-            if(gamma[0] > 0) r = (pow((float)r / full_on, 1 / gamma[0]) * full_on);
-            if(gamma[1] > 0) g = (pow((float)g / full_on, 1 / gamma[1]) * full_on);
-            if(gamma[2] > 0) b = (pow((float)b / full_on, 1 / gamma[2]) * full_on);
+            if(gamma[0] > 0) r = pow(r / full_on, 1 / gamma[0]) * full_on;
+            if(gamma[1] > 0) g = pow(g / full_on, 1 / gamma[1]) * full_on;
+            if(gamma[2] > 0) b = pow(b / full_on, 1 / gamma[2]) * full_on;
             // 2. brightness
-            r = (r * brightness[0]);
-            g = (g * brightness[1]);
-            b = (b * brightness[2]);
+            r = r * brightness[0];
+            g = g * brightness[1];
+            b = b * brightness[2];
             // 3. clip into color range
-            r = min(full_on, max(0u, r));
-            g = min(full_on, max(0u, g));
-            b = min(full_on, max(0u, b));
+            r = min(full_on, max(0.0f, r));
+            g = min(full_on, max(0.0f, g));
+            b = min(full_on, max(0.0f, b));
             cout << "temperature fix : " << r << " " << g << " " << b << endl;
 
 
             // for VERY dark colors, don't shove those changes onto the color too much
             // and also make it more gray to prevent supersaturated colors like (0, 1, 0).
-            // for this, have a float filter_Strength that is between 0.4 and 1 for dark colors,
+            // For this, have a float filter_Strength that is between 0.5 and 1 for dark colors,
+            // (filter strength of 0 means: take original color without e.g. color temperature adjustments)
             // and 1 for all other colors.
-            float darkness_threshold = 0.1;
+            float darkness_threshold = 0.05;
             float darkness = (float)((r_old + g_old + b_old) / 3) / full_on;
-            float filter_strength = max(0.4f, min(darkness_threshold, darkness) / darkness_threshold);
+            float filter_strength = max(0.5f, min(darkness_threshold, darkness) / darkness_threshold);
             float greyscaling = max(0.0f, min(darkness_threshold, darkness) / darkness_threshold);
             if(greyscaling < 1 or filter_strength < 1)
             {
                 // for super dark colors, just use gray
                 if(darkness < 0.01) greyscaling = 0;
                 // 1. reverse the filters a bit for dark colors 
-                r = (filter_strength) * r + (1-filter_strength) * r_old;
-                g = (filter_strength) * g + (1-filter_strength) * g_old;
-                b = (filter_strength) * b + (1-filter_strength) * b_old;
+                r = (filter_strength) * r + (1 - filter_strength) * r_old;
+                g = (filter_strength) * g + (1 - filter_strength) * g_old;
+                b = (filter_strength) * b + (1 - filter_strength) * b_old;
                 // 2. make dark colors more grey
-                int mean = (r + g + b ) / 3;
-                r = (greyscaling) * r + (1-greyscaling) * mean;
-                g = (greyscaling) * g + (1-greyscaling) * mean;
-                b = (greyscaling) * b + (1-greyscaling) * mean;
+                float mean = (r + g + b) / 3;
+                r = (greyscaling) * r + (1 - greyscaling) * mean;
+                g = (greyscaling) * g + (1 - greyscaling) * mean;
+                b = (greyscaling) * b + (1 - greyscaling) * mean;
                 cout << "dark color fix  : " << r << " " << g << " " << b << endl;
             }
 
             // send to the server for display
-            sendcolor(r, g, b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second, client_id, SCREEN_COLOR);
+            sendcolor((int)r, (int)g, (int)b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second, client_id, SCREEN_COLOR);
         }
         else
         {
