@@ -14,12 +14,12 @@
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import re
-import pigpio
-import time
-from threading import Thread, Semaphore
 import logging
 from pathlib import Path
+from fader import Fader
+
+import pigpio
+pi = pigpio.pi()
 
 staticfiles = str(Path(Path(__file__).parent, 'static'))
 logfile = str(Path(Path(__file__).parent, 'log'))
@@ -28,38 +28,6 @@ logger.setLevel(logging.INFO)
 handler = logging.FileHandler(logfile)
 handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 logger.addHandler(handler)
-
-# the fading thread
-fader_thread = None
-
-# use a semaphore in order not to update some color variables while some
-# fading calculation is in progress
-working_on_color = Semaphore()
-
-# current color during fading and statically
-r = 0
-g = 0
-b = 0
-
-# color which is used as the fading starting color
-r_start = 0
-g_start = 0
-b_start = 0
-
-# color to fade into
-r_target = 0
-g_target = 0
-b_target = 0
-
-# how much progress the current fading already has
-fade_state = 0
-
-# fading config
-frequency = 200 #hz
-
-# going to be overwritten during get request:
-checks_per_second = 1
-checks = 0
 
 # hardware setup
 gpio_r = 17
@@ -71,16 +39,17 @@ gpio_b = 24
 raspberry_ip = '0.0.0.0'
 raspberry_port = 3546
 
-# higher resolution for color changes
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
 full_on = 20000
-pi = pigpio.pi()
-pi.set_PWM_range(gpio_r, full_on)
-pi.set_PWM_range(gpio_g, full_on)
-pi.set_PWM_range(gpio_b, full_on)
-pi.set_PWM_frequency(gpio_r, 400)
-pi.set_PWM_frequency(gpio_g, 400)
-pi.set_PWM_frequency(gpio_b, 400)
+
+# higher resolution for color changes
+# https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
+gpio_freq_movie = 400 # 2500 colors
+gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
+current_gpio_freq = 0
+
+# the fading thread
+fader = None
 
 # current client id, used to stop the connection to old
 # connections, when a new client starts sending screen info
@@ -98,48 +67,43 @@ BADREQUEST = 400
 SCREEN_COLOR = 1
 STATIC = 2
 
-def fade_loop():
 
-    # going to overwrite those globally
-    global r, g, b, fade_state
+def create_fader_thread():
+    fader = Fader(gpio_r, gpio_g, gpio_b, full_on)
+    fader.start()
+    return fader
 
-    while True:
-        start = time.time()
-        # f will move from 0 to 1
-        
-        working_on_color.acquire()
-        if checks > 1:
-            fade_state += 1/checks
+fader = create_fader_thread()
 
-            if fade_state < 1:
-                # Add old and new color together proportionally
-                # so that a fading effect is created.
-                # Overwrite globals r, g and b so that when fading restarts,
-                # that is going to be the new starting color.
-                r = (r_start*(1-fade_state) + r_target*(fade_state))
-                g = (g_start*(1-fade_state) + g_target*(fade_state))
-                b = (b_start*(1-fade_state) + b_target*(fade_state))
-                pi.set_PWM_dutycycle(gpio_r, r)
-                pi.set_PWM_dutycycle(gpio_g, g)
-                pi.set_PWM_dutycycle(gpio_b, b)  
-                # logger.info('{} {} {}'.format(r, g, b))
 
-            else:
-                pi.set_PWM_dutycycle(gpio_r, r_target)
-                pi.set_PWM_dutycycle(gpio_g, g_target)
-                pi.set_PWM_dutycycle(gpio_b, b_target)
-                pass
-        working_on_color.release()
+def set_pwm_dutycycle(pin, value):
+    pi.set_PWM_dutycycle(pin, value)
+    # pi.hardware_PWM(pin, 800, int(1000000//(full_on/value)))
 
-        delta = time.time()-start
-        time.sleep(max(0, 1/checks_per_second/(checks+1)-delta))
+
+def set_freq(freq):
+    """
+        sets the frequency of the gpio PWM signal.
+        Higher frequencies result in smaller resolution
+        for color changes.
+        https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
+    """
+
+    global current_gpio_freq
+    if freq != current_gpio_freq:
+        pi.set_PWM_frequency(gpio_r, freq)
+        pi.set_PWM_frequency(gpio_g, freq)
+        pi.set_PWM_frequency(gpio_b, freq)
+    current_gpio_freq = freq
 
 
 def is_screen_color_feed(params):
     return 'id' in params and 'mode' in params and params['mode'] == SCREEN_COLOR
 
+
 def is_static_color(params):
     return not is_screen_color_feed(params)
+
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
@@ -153,27 +117,23 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             url = '/index.html'
 
         allowed_types = {'.css':'text/css',
-                        '.html':'text/html',
-                        '.js':'text/javascript',
-                        '.jpg':'image/jpeg',
-                        '.png':'image/png',
-                        '.ico':'image/x-icon'}
+                         '.html':'text/html',
+                         '.js':'text/javascript',
+                         '.jpg':'image/jpeg',
+                         '.png':'image/png',
+                         '.ico':'image/x-icon'}
 
         # if not a file request
         if url.startswith('/color/set/'):
 
-            global r, g, b
-            global checks_per_second, checks, fade_state
-            global r_target, g_target, b_target
-            global r_start, g_start, b_start
-            global fader_thread
+            global fader
             global stop_client_ids, current_client_id
 
             params_split = url.split('?')[1].split('&')
             i = 0
             # example: ['r=048', 'g=1024.3', 'b=0', 'cps=1']
             # keep current color by default if one channel is missing in the request:
-            params = {'r': r, 'g': g, 'b': b, 'cps': 1}
+            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1}
             try:
                 while i < len(params_split):
                     key, value = params_split[i].split('=')
@@ -192,6 +152,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # dead some timeout would have to be checked and stuff. Might be even more
             # complex than what I'm doing at the moment.
             if is_screen_color_feed(params):
+
+                set_freq(gpio_freq_movie)
+
                 # first connected client ever?
                 if current_client_id == -1:
                     current_client_id = params['id']
@@ -199,6 +162,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                     # if id in stoplist, then stop and reject
                     if params['id'] in stop_client_ids:
                         logger.info('closing connection to {}'.format(params['id']))
+                        # now that it is rejected the client will stop if it
+                        # is a good client. Remove it from the stop_client_ids list
+                        # so that a random duplicate id will not be rejected in the future.
                         stop_client_ids.remove(params['id'])
                         self.send_response(CONFLICT)
                         self.end_headers()
@@ -214,37 +180,49 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # if a static color request was received,
             # stop the client that is currently feeding colors from a screen
             # into the server
-            if is_static_color(params):
+            elif is_static_color(params):
+
+                # higher frequency for eye health
+                # for static colors that are active
+                # for a longer period of time
+                set_freq(gpio_freq_static)
+
                 if current_client_id != -1:
                     # stop the old client
                     stop_client_ids += [current_client_id]
                     logger.info('received static color {}'.format(current_client_id))
 
-            working_on_color.acquire()
-            checks_per_second = max(1, params['cps'])
-            checks = max(1, int(frequency/checks_per_second)-1)
+            """# if dark color, reduce frequency to obtain higher dutycicle resolution
+            # for more fine-grained settings
+            value = (params['r'] + params['g'] + params['b'])/3
+            exp = max(1, math.log(value/full_on, 0.5))
+            freq = max(200, int(2 * 800 / exp))
+            # dutycicle of 75% -> half the frequency
+            # 87.25% -> quarter of the frequency
+            # this causes some flickering, so don't switch frequencies often
+            # print(freq, value, math.log(value/full_on, 0.5), gpio_freq / math.log(value/full_on, 0.5))
+            # print("exp", exp, "value", value, "gpio_freq", gpio_freq, "freq", freq, "arsch", 4*gpio_freq, 4*gpio_freq/exp)
+            if gpio_freq/freq >= 1.5 or freq/gpio_freq >= 1.5:
+                print("setting gpio freq to", freq)
+                pi.set_PWM_frequency(gpio_r, freq)
+                pi.set_PWM_frequency(gpio_g, freq)
+                pi.set_PWM_frequency(gpio_b, freq)
+                gpio_freq = freq"""
 
-            # reset fading state:
-            fade_state = 0
-            # fader_thread is the thread that just keeps fading forever,
+            fader.set_fading_speed(params['cps'])
+
+            # fader is the thread that just keeps fading forever,
             # whereas the main thread writes the variables from the get request into the
             # processes (shared between threads) memory that are used for fading:
-            if fader_thread is None or not fader_thread.is_alive():
+            if fader is None or not fader.is_alive():
                 # also check if still alive, restart if not
-                logger.info('starting fader')
-                fader_thread = Thread(target=fade_loop)
-                fader_thread.start()
+                logger.error('fader not active anymore! restarting')
+                fader = create_fader_thread()
+                fader.start()
             # only put valid parameters into rgb_target and _start, as the
             # fade thread might read from them at any point. So no temporary
             # stuff that needs to be maxed afterwards or something.
-            r_target = max(0, min(full_on, params['r']))
-            g_target = max(0, min(full_on, params['g']))
-            b_target = max(0, min(full_on, params['b']))
-            # start where fading has just been
-            r_start = max(0, min(full_on, r))
-            g_start = max(0, min(full_on, g))
-            b_start = max(0, min(full_on, b))
-            working_on_color.release()
+            fader.set_target(params['r'], params['g'], params['b'])
 
             # send ok
             self.send_response(OK)
@@ -256,9 +234,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             # just send what the current color is
-            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(int(r*255/full_on),
-                                                                     int(g*255/full_on),
-                                                                     int(b*255/full_on)),
+            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(int(fader.r * 255 / full_on),
+                                                                     int(fader.g * 255 / full_on),
+                                                                     int(fader.b * 255 / full_on)),
                                                                      'utf-8'))
 
         elif url[url.rfind('.'):] in allowed_types:
@@ -268,7 +246,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             logger.info('file request for {}'.format(filename))
             # send css and js files upon request
-            
+
             # make sure the request is not doing weird stuff in the url
             # no subdirectories (because there are none) and no going back
             url = url.replace('/', '').replace('..', '')
@@ -297,8 +275,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_response(BADREQUEST)
             self.end_headers()
 
-
-
+pi.set_PWM_range(gpio_r, full_on)
+pi.set_PWM_range(gpio_g, full_on)
+pi.set_PWM_range(gpio_b, full_on)
 
 logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
