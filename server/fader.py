@@ -44,49 +44,68 @@ class Fader(Thread):
         # how much progress the current fading already has
         self.fade_state = 0
 
+        self.constant_since = time.time()
+
+        # setup the PWM
+        pi.set_PWM_range(gpio_r, full_on)
+        pi.set_PWM_range(gpio_g, full_on)
+        pi.set_PWM_range(gpio_b, full_on)
+        # higher resolution for color changes
+        # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
+        self.gpio_freq_movie = 400 # 2500 colors
+        self.gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
+
+        # complete thread creation
         Thread.__init__(self)
         
+            
+    def set_freq(self, freq):
+        """
+            sets the frequency of the gpio PWM signal.
+            Higher frequencies result in smaller resolution
+            for color changes.
+            https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
+        """
+
+        if freq != pi.get_PWM_frequency(self.gpio_r):
+            pi.set_PWM_frequency(self.gpio_r, freq)
+            pi.set_PWM_frequency(self.gpio_g, freq)
+            pi.set_PWM_frequency(self.gpio_b, freq)
+
 
     def set_pwm_dutycycle(self, pin, value):
         pi.set_PWM_dutycycle(pin, max(1, value))
         # pi.hardware_PWM(pin, 800, int(1000000//(full_on/value)))
 
 
-    def set_color(self, r, g, b):
-        """
-            instantly switches the color of the LEDs
-        """
-        self.working_on_color.acquire()
-        self.r = max(0, min(self.full_on, r))
-        self.g = max(0, min(self.full_on, g))
-        self.b = max(0, min(self.full_on, b))
-        self.set_pwm_dutycycle(self.gpio_r, self.r)
-        self.set_pwm_dutycycle(self.gpio_g, self.g)
-        self.set_pwm_dutycycle(self.gpio_b, self.b)
-        self.working_on_color.release()
-
-
-    def set_target(self, r, g, b):
+    def set_target(self, r, g, b, threshold=0.015):
         """
             sets a new target to fade into. Takes the current color
-            and uses it as the new starting point
+            and uses it as the new starting point.
+
+            threshold is the fraction of full_on that is needed
+            as minimum color change for any channel in order to
+            trigger fading.
         """
-        self.working_on_color.acquire()
-        self.r_target = max(0, min(self.full_on, r))
-        self.g_target = max(0, min(self.full_on, g))
-        self.b_target = max(0, min(self.full_on, b))
-        # start where fading has just been
-        self.r_start = self.r
-        self.g_start = self.g
-        self.b_start = self.b
-        self.fade_state = 0
-        self.working_on_color.release()
 
+        # Only if the difference in color is large enough.
+        # This will prevent changes on dark colors that cannot
+        # be faded smoothly because the delta is too small.
+        thres_r = abs(r - self.r_target) > self.full_on * threshold
+        thres_g = abs(r - self.r_target) > self.full_on * threshold
+        thres_b = abs(r - self.r_target) > self.full_on * threshold
 
-    def set_start(self, r, g, b):
-        self.r_start = max(0, min(self.full_on, r))
-        self.g_start = max(0, min(self.full_on, g))
-        self.b_start = max(0, min(self.full_on, b))
+        if thres_r or thres_g or thres_b:
+            self.working_on_color.acquire()
+            self.r_target = max(0, min(self.full_on, r))
+            self.g_target = max(0, min(self.full_on, g))
+            self.b_target = max(0, min(self.full_on, b))
+            # start where fading has just been
+            self.r_start = self.r
+            self.g_start = self.g
+            self.b_start = self.b
+            self.fade_state = 0
+            self.working_on_color.release()
 
 
     def set_fading_speed(self, checks_per_second, fader_frequency=200):
@@ -100,7 +119,9 @@ class Fader(Thread):
         # fade from start to target color
         self.checks = max(1, int(fader_frequency / self.checks_per_second) - 1)
         # self.fade_state = 0
-        self.set_start(self.r, self.g, self.b)
+        self.r_start = self.r
+        self.g_start = self.g
+        self.b_start = self.b
         self.working_on_color.release()
 
 
@@ -133,8 +154,18 @@ class Fader(Thread):
                     self.set_pwm_dutycycle(self.gpio_g, self.g)
                     self.set_pwm_dutycycle(self.gpio_b, self.b)
                     # logger.info('{} {} {}'.format(r, g, b))
+                    self.constant_since = time.time()
 
                 else:
+                    # after 3 minutes increase the LED frequency
+                    # in order to protect the eye
+                    if time.time() - self.constant_since > 180:
+                        # reduces resolution, so the color will
+                        # make a visible jump if it is a dark one
+                        self.set_freq(self.gpio_freq_static)
+                    # the server will take care of setting the
+                    # frequency back to gpio_freq_movie
+
                     self.set_pwm_dutycycle(self.gpio_r, self.r_target)
                     self.set_pwm_dutycycle(self.gpio_g, self.g_target)
                     self.set_pwm_dutycycle(self.gpio_b, self.b_target)
