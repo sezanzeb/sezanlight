@@ -78,11 +78,6 @@ def create_fader_thread():
 fader = create_fader_thread()
 
 
-def set_pwm_dutycycle(pin, value):
-    pi.set_PWM_dutycycle(pin, value)
-    # pi.hardware_PWM(pin, 800, int(1000000//(full_on/value)))
-
-
 def set_freq(freq):
     """
         sets the frequency of the gpio PWM signal.
@@ -245,14 +240,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             filename = str(staticfiles) + url
 
-            # check url using pathlib. It has to be a child of staticfiles
-            # prevents going up in the directory tree uring '..' in the url
             if not Path(filename).exists():
                 logger.info('file not found!')
                 self.send_response(NOTFOUND)
                 self.end_headers()
                 return
 
+            # check url using pathlib. It has to be a child of staticfiles
+            # prevents going up in the directory tree uring '..' in the url
             if not str(Path(filename).resolve()).startswith(str(staticfiles)):
                 # malicious request for a file outside of staticfiles
                 logger.warning('malicious request!')

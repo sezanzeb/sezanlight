@@ -48,7 +48,7 @@ class Fader(Thread):
         
 
     def set_pwm_dutycycle(self, pin, value):
-        pi.set_PWM_dutycycle(pin, value)
+        pi.set_PWM_dutycycle(pin, max(1, value))
         # pi.hardware_PWM(pin, 800, int(1000000//(full_on/value)))
 
 
