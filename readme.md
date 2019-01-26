@@ -5,7 +5,11 @@ rgb lights, which are controlled using one PWM gpio pin per R, G and B.
 
 Since there is only a single color that needs to be figured out, the whole process can be kept minimalistic.
 Therefore It's rather fast. It sparsly checks a few places on the screen (150 pixels by default) and puts
-extra weight on those with high saturation and high lightness.
+extra weight on those with high saturation.
+
+When the color on the LEDs doesn't change or is supposed to be static, a higher LED frequency of 2500hz is used to reduce
+eye strain https://www.notebookcheck.net/Why-Pulse-Width-Modulation-PWM-is-such-a-headache.270240.0.html otherwise it is
+set to 400hz in order to provide smooth fading colors (lower frequency results in higher resolution PWM dutycicle adjustments)
 
 **worked with:**
 - manjaro xfce
