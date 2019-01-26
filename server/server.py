@@ -48,7 +48,6 @@ full_on = 20000
 # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
 gpio_freq_movie = 400 # 2500 colors
 gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
-current_gpio_freq = 0
 
 # the fading thread
 fader = None
@@ -86,12 +85,10 @@ def set_freq(freq):
         https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
     """
 
-    global current_gpio_freq
-    if freq != current_gpio_freq:
+    if freq != pi.get_PWM_frequency(gpio_r):
         pi.set_PWM_frequency(gpio_r, freq)
         pi.set_PWM_frequency(gpio_g, freq)
         pi.set_PWM_frequency(gpio_b, freq)
-    current_gpio_freq = freq
 
 
 def is_screen_color_feed(params):
