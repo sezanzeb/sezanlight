@@ -33,22 +33,26 @@ float timeout = 0;
 // bad practice apparently:
 using namespace std;
 
+
 long int get_us()
 {
+    /* this function returns the microseconds since 1970 */
     struct timeval time;
     gettimeofday(&time, NULL);
     long int us = time.tv_sec * 1000000 + time.tv_usec;
     return us;
 }
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-    ((string*)userp)->append((char*)contents, size *nmemb);
-    return size *nmemb;
-}
 
 void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, int client_id, int mode)
 {
+    /* seoncds a get request to the LED server using curl
+     * r, g and b are the colors between 0 and full_on
+     * ip and port those of the raspberry
+     * check_per_second is how often this client will (try to) make such reqeusts per seoncds
+     * client_id is an identifier for the current "stream" of messages from this client
+     * mode should be SCREEN_COLOR */
+
     CURL *curl;
 
     int handle_count;
@@ -62,11 +66,8 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
         cout << "sending GET pramas: " << url << "\n";
 
         long int start = get_us();
-        string readBuffer;
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         CURLcode status = curl_easy_perform(curl);
         long http_code = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
@@ -102,8 +103,14 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
     }
 }
 
+
 void parse_float_array(string strvalue, int size, float *array)
 {
+    /* given a string like 1.10,0.88,0.7
+     * overwrites the values in the array parameter to
+     * {1.10, 0.88, 0.7}
+     * in this case the size param would be 3 */
+
     // more complicated stuff, one float per channel in array
     int channel = 0;
     int j = 0;
@@ -123,6 +130,7 @@ void parse_float_array(string strvalue, int size, float *array)
     }
 }
 
+
 int main(void)
 {
     // default params:
@@ -132,9 +140,9 @@ int main(void)
     int screen_height = 1080;
 
     // sampling
-    int smoothing = 6;
+    int smoothing = 3;
     int checks_per_second = 2;
-    int columns = 100;
+    int columns = 50;
     int lines = 3;
 
     // hardware
@@ -152,15 +160,15 @@ int main(void)
     // 0 = no nrmalization, 0.5 = increase lightness, 1 = normalize to full_on
     float normalize = 0;
     // if false, will normalize the max value to full_on, if true wil normalize the sum to it
-    // setting it to true will basically favor saturated colors over grey ones during normalization
+    // setting it to true will basically favor saturated colors over grey/white ones during normalization
     bool normalize_sum = true;
     // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
-    float increase_saturation = 0.4;
+    float increase_saturation = 0.5;
 
     // overwrite default params with params from config file
     ifstream infile("../config");
     string line;
-    while (std::getline(infile, line))
+    while (getline(infile, line))
     {
         boost::trim(line);
 
@@ -430,7 +438,7 @@ int main(void)
 
             // for VERY dark colors, don't shove those changes onto the color too much
             // and also make it more gray to prevent supersaturated colors like (0, 1, 0).
-            // For this, have a float filter_Strength that is between 0.5 and 1 for dark colors,
+            // For this, have a float filter_strength that is between 0.5 and 1 for dark colors,
             // (filter strength of 0 means: take original color without e.g. color temperature adjustments)
             // and 1 for all other colors.
             float darkness_threshold = 0.05;
@@ -440,7 +448,8 @@ int main(void)
             if(greyscaling < 1 or filter_strength < 1)
             {
                 // for super dark colors, just use gray
-                if(darkness < 0.01) greyscaling = 0;
+                if(darkness < 0.01)
+                    greyscaling = 0;
                 // 1. reverse the filters a bit for dark colors 
                 r = (filter_strength) * r + (1 - filter_strength) * r_old;
                 g = (filter_strength) * g + (1 - filter_strength) * g_old;
@@ -453,7 +462,7 @@ int main(void)
                 cout << "dark color fix  : " << r << " " << g << " " << b << endl;
             }
 
-            // send to the server for display
+            // send to the server for the illumination of the LEDs
             sendcolor((int)r, (int)g, (int)b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second, client_id, SCREEN_COLOR);
         }
         else
