@@ -2,15 +2,22 @@
 
 """
     this server consists of two threads:
+
     the main thread:
         listens for get requests and decodes the colors from the get params (stored in url)
-        then overwrites the global variables
-    the fader thread:
-        the overwritten global variables, overwritten by the main thread, are those variables
+        then tells the fader thread object about those parameters.
+
+        It also provides the files for the "led controller web app"
+
+    the fader thread object:
+        the parameters, parsed by the main thread, are those variables
         that control the fading. The fader is in an infinite loop that just fades from the color
         from the state when a request was made to the color of the request. This way, when multiple
         requests are made within a short amount of time, the previous fading task is basically stopped,
         it takes the color that it stopped at and fades to the new color.
+
+        This object is the one in charge for controlling all the gpio PWM settings
+
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -73,10 +80,6 @@ def is_screen_color_feed(params):
     return 'id' in params and 'mode' in params and params['mode'] == SCREEN_COLOR
 
 
-def is_static_color(params):
-    return not is_screen_color_feed(params)
-
-
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -119,12 +122,21 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 return
             # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
+            # by how many percent/100 of full_on does the color need to change
+            # in order to trigger a change of the LEDs?
+            static_color_threshold = 0.015
+
             # 1. stop old connections when new connections arrive
             # 2. don't reject new connections because when an old connection is
             # dead some timeout would have to be checked and stuff. Might be even more
             # complex than what I'm doing at the moment.
             if is_screen_color_feed(params):
 
+                # note that the fader increases the LED frequency when
+                # the color didn't change for a long enough period of time.
+                # This overwrites it. The client doesn't send messages when
+                # no color change is observed which is the reason why this
+                # doesn't overwrite the frequency immediatelly.
                 fader.set_freq(fader.gpio_freq_movie)
 
                 # first connected client ever?
@@ -149,10 +161,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                         current_client_id = params['id']
                         logger.info('new connection from {}'.format(current_client_id))
 
-            # if a static color request was received,
-            # stop the client that is currently feeding colors from a screen
-            # into the server
-            elif is_static_color(params):
+            else:
+                # if a static color request was received,
+                # stop the client that is currently feeding colors from a screen
+                # into the server
+
+                # for static colors, don't set a threshold of how much the color needs to change
+                static_color_threshold = 0
 
                 # higher frequency for eye health
                 # for static colors that are active
@@ -162,39 +177,21 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 if current_client_id != -1:
                     # stop the old client
                     stop_client_ids += [current_client_id]
-                    logger.info('received static color {}'.format(current_client_id))
-
-            """# if dark color, reduce frequency to obtain higher dutycicle resolution
-            # for more fine-grained settings
-            value = (params['r'] + params['g'] + params['b'])/3
-            exp = max(1, math.log(value/full_on, 0.5))
-            freq = max(200, int(2 * 800 / exp))
-            # dutycicle of 75% -> half the frequency
-            # 87.25% -> quarter of the frequency
-            # this causes some flickering, so don't switch frequencies often
-            # print(freq, value, math.log(value/full_on, 0.5), gpio_freq / math.log(value/full_on, 0.5))
-            # print("exp", exp, "value", value, "gpio_freq", gpio_freq, "freq", freq, "arsch", 4*gpio_freq, 4*gpio_freq/exp)
-            if gpio_freq/freq >= 1.5 or freq/gpio_freq >= 1.5:
-                print("setting gpio freq to", freq)
-                pi.set_PWM_frequency(gpio_r, freq)
-                pi.set_PWM_frequency(gpio_g, freq)
-                pi.set_PWM_frequency(gpio_b, freq)
-                gpio_freq = freq"""
+                    # no client is actively sending colors anymore:
+                    current_client_id = -1
+                    logger.info('received static color')
 
             fader.set_fading_speed(params['cps'])
 
-            # fader is the thread that just keeps fading forever,
-            # whereas the main thread writes the variables from the get request into the
-            # processes (shared between threads) memory that are used for fading:
+            # fader is the thread object that just keeps fading forever,
+            # whereas the main thread adjusts the members of the fader object
             if fader is None or not fader.is_alive():
                 # also check if still alive, restart if not
                 logger.error('fader not active anymore! restarting')
                 fader = create_fader_thread()
                 fader.start()
-            # only put valid parameters into rgb_target and _start, as the
-            # fade thread might read from them at any point. So no temporary
-            # stuff that needs to be maxed afterwards or something.
-            fader.set_target(params['r'], params['g'], params['b'])
+                
+            fader.set_target(params['r'], params['g'], params['b'], static_color_threshold)
 
             # send ok
             self.send_response(OK)

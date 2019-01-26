@@ -95,7 +95,7 @@ class Fader(Thread):
         thres_g = abs(r - self.r_target) > self.full_on * threshold
         thres_b = abs(r - self.r_target) > self.full_on * threshold
 
-        if thres_r or thres_g or thres_b:
+        if threshold == 0 or thres_r or thres_g or thres_b:
             self.working_on_color.acquire()
             self.r_target = max(0, min(self.full_on, r))
             self.g_target = max(0, min(self.full_on, g))
