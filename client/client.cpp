@@ -441,10 +441,9 @@ int main(void)
             // For this, have a float filter_strength that is between 0.5 and 1 for dark colors,
             // (filter strength of 0 means: take original color without e.g. color temperature adjustments)
             // and 1 for all other colors.
-            float darkness_threshold = 0.05;
             float darkness = (float)((r_old + g_old + b_old) / 3) / full_on;
-            float filter_strength = max(0.5f, min(darkness_threshold, darkness) / darkness_threshold);
-            float greyscaling = max(0.0f, min(darkness_threshold, darkness) / darkness_threshold);
+            float filter_strength = max(0.5f, min(0.15f, darkness) / 0.15f);
+            float greyscaling = max(0.0f, min(0.05f, darkness) / 0.05f);
             if(greyscaling < 1 or filter_strength < 1)
             {
                 // for super dark colors, just use gray
