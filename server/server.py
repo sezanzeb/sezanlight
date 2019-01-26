@@ -21,13 +21,15 @@ from fader import Fader
 import pigpio
 pi = pigpio.pi()
 
-staticfiles = str(Path(Path(__file__).parent, 'static'))
-logfile = str(Path(Path(__file__).parent, 'log'))
+staticfiles = Path(Path(__file__).parent, 'static').absolute()
+logfile = Path(Path(__file__).parent, 'log')
 logger = logging.getLogger('sezanlight')
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(logfile)
+handler = logging.FileHandler(str(logfile))
 handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 logger.addHandler(handler)
+# also enable console output:
+logger.addHandler(logging.StreamHandler())
 
 # hardware setup
 gpio_r = 17
@@ -111,7 +113,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         url = self.path # /?r=128&g=128&b=128
 
-        logger.info('request for {}'.format(url))
+        logger.info('\nrequest for {}'.format(url))
 
         if url == '/':
             url = '/index.html'
@@ -241,30 +243,36 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif url[url.rfind('.'):] in allowed_types:
 
-            filename = staticfiles + url
-            filetype = url[url.rfind('.'):]
+            filename = str(staticfiles) + url
 
-            logger.info('file request for {}'.format(filename))
-            # send css and js files upon request
-
-            # make sure the request is not doing weird stuff in the url
-            # no subdirectories (because there are none) and no going back
-            url = url.replace('/', '').replace('..', '')
-
-            contents = b''
-
-            try:
-                with open(filename, 'rb') as f:
-                    contents = f.read()
-            except FileNotFoundError:
+            # check url using pathlib. It has to be a child of staticfiles
+            # prevents going up in the directory tree uring '..' in the url
+            if not Path(filename).exists():
                 logger.info('file not found!')
                 self.send_response(NOTFOUND)
                 self.end_headers()
                 return
 
+            if not str(Path(filename).resolve()).startswith(str(staticfiles)):
+                # malicious request for a file outside of staticfiles
+                logger.warning('malicious request!')
+                # make sure to answer the same way as 404 requests
+                # so that the existance of files cannot be checked using get requests
+                self.send_response(NOTFOUND)
+                self.end_headers()
+                return
+
+            logger.info('file request for {}'.format(filename))
+            # send css and js files upon request
+
+            contents = b''
+            with open(filename, 'rb') as f:
+                contents = f.read()
+
             # send ok
+            content_type = allowed_types[url[url.rfind('.'):]]
             self.send_response(OK)
-            self.send_header('Content-type', allowed_types[filetype])
+            self.send_header('Content-type', content_type)
             self.end_headers()
             # send file
             self.wfile.write(contents)
