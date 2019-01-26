@@ -18,9 +18,6 @@ import logging
 from pathlib import Path
 from fader import Fader
 
-import pigpio
-pi = pigpio.pi()
-
 staticfiles = Path(Path(__file__).parent, 'static').absolute()
 logfile = Path(Path(__file__).parent, 'log')
 logger = logging.getLogger('sezanlight')
@@ -43,11 +40,6 @@ raspberry_port = 3546
 
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
 full_on = 20000
-
-# higher resolution for color changes
-# https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
-gpio_freq_movie = 400 # 2500 colors
-gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
 
 # the fading thread
 fader = None
@@ -75,20 +67,6 @@ def create_fader_thread():
     return fader
 
 fader = create_fader_thread()
-
-
-def set_freq(freq):
-    """
-        sets the frequency of the gpio PWM signal.
-        Higher frequencies result in smaller resolution
-        for color changes.
-        https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
-    """
-
-    if freq != pi.get_PWM_frequency(gpio_r):
-        pi.set_PWM_frequency(gpio_r, freq)
-        pi.set_PWM_frequency(gpio_g, freq)
-        pi.set_PWM_frequency(gpio_b, freq)
 
 
 def is_screen_color_feed(params):
@@ -147,7 +125,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # complex than what I'm doing at the moment.
             if is_screen_color_feed(params):
 
-                set_freq(gpio_freq_movie)
+                fader.set_freq(fader.gpio_freq_movie)
 
                 # first connected client ever?
                 if current_client_id == -1:
@@ -179,7 +157,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 # higher frequency for eye health
                 # for static colors that are active
                 # for a longer period of time
-                set_freq(gpio_freq_static)
+                fader.set_freq(fader.gpio_freq_static)
 
                 if current_client_id != -1:
                     # stop the old client
@@ -274,10 +252,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # was not a valid request
             self.send_response(BADREQUEST)
             self.end_headers()
-
-pi.set_PWM_range(gpio_r, full_on)
-pi.set_PWM_range(gpio_g, full_on)
-pi.set_PWM_range(gpio_b, full_on)
 
 logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
 httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
