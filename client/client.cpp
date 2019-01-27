@@ -19,8 +19,8 @@
 #include <boost/algorithm/string.hpp>
 
 // color modes
-#define SCREEN_COLOR 1
-#define STATIC 2
+#define SCREEN_COLOR "movie"
+#define STATIC "static"
 
 // error codes
 #define OK = 200
@@ -44,7 +44,7 @@ long int get_us()
 }
 
 
-void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, int client_id, int mode)
+void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, int client_id, string mode)
 {
     /* seoncds a get request to the LED server using curl
      * r, g and b are the colors between 0 and full_on
@@ -62,7 +62,9 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
     if(curl)
     {
         char url[100];
-        sprintf(url, "%s:%d/color/set/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%d", ip, port, r, g, b, checks_per_second, client_id, mode);
+        sprintf(url, "%s:%d/color/set/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%s", 
+                ip, port, r, g, b, checks_per_second, client_id, mode.c_str());
+
         cout << "sending GET pramas: " << url << "\n";
 
         long int start = get_us();
@@ -76,7 +78,8 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
 
         if(http_code == CONFLICT)
         {
-            cout << "server closed connection with this client to prevent duplicate connections. Another client started sending to the server!" << endl;
+            cout << "server closed connection with this client to prevent duplicate "
+                    "connections. Another client started sending to the server!" << endl;
             exit(1);
         }
 
@@ -84,8 +87,8 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
         if(status != CURLE_OK)
         {
             // one check every 1/cps seconds, so add that as well
-            int delta = (get_us() - start)/1000000;
-            timeout += delta + 1.0/checks_per_second;
+            int delta = (get_us() - start) / 1000000;
+            timeout += delta + 1.0 / checks_per_second;
             if(timeout >= max_timeout) // 5 seconds timeout
             {
                 cout << "timeout! cannot reach server!" << endl;

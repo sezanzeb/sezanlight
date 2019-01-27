@@ -6,10 +6,12 @@ from threading import Thread, Semaphore
 import pigpio
 pi = pigpio.pi()
 
+import traceback
+
 
 class Fader(Thread):
 
-    def __init__(self, gpio_r, gpio_g, gpio_b, full_on):
+    def __init__(self, gpio_r, gpio_g, gpio_b, full_on, logger):
 
         # the semaphore on order to maintain integrity of
         # smooth fading despite incoming requests
@@ -52,8 +54,11 @@ class Fader(Thread):
         pi.set_PWM_range(gpio_b, full_on)
         # higher resolution for color changes
         # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
-        self.gpio_freq_movie = 400 # 2500 colors
+        self.gpio_freq_movie = 400 # lower frequencies increase duticycle resolution. 2500 colors
         self.gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
+        self.current_freq = 0
+
+        self.logger = logger
 
         # complete thread creation
         Thread.__init__(self)
@@ -66,11 +71,14 @@ class Fader(Thread):
             for color changes.
             https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
         """
-
-        if freq != pi.get_PWM_frequency(self.gpio_r):
+        # don't ask for pi.get_PWM_frequency as that might be different
+        # from freq depending on the available frequencies
+        if freq != self.current_freq:
             pi.set_PWM_frequency(self.gpio_r, freq)
             pi.set_PWM_frequency(self.gpio_g, freq)
             pi.set_PWM_frequency(self.gpio_b, freq)
+            self.current_freq = freq
+            self.logger.info('set gpio freq to {}hz'.format(pi.get_PWM_frequency(self.gpio_r)))
 
 
     def set_pwm_dutycycle(self, pin, value):
@@ -78,25 +86,31 @@ class Fader(Thread):
         # pi.hardware_PWM(pin, 800, int(1000000//(full_on/value)))
 
 
-    def set_target(self, r, g, b, threshold=0.015):
+    def set_target(self, r, g, b, cps=1, mode='static'):
         """
             sets a new target to fade into. Takes the current color
             and uses it as the new starting point.
 
-            threshold is the fraction of full_on that is needed
-            as minimum color change for any channel in order to
-            trigger fading.
+            cps is the number of targets that the client will try to
+            send approximately per second, or rather, how fast the
+            color should fade.
+
+            mode can be 'static' or 'movie'.
         """
 
-        # Only if the difference in color is large enough.
-        # This will prevent changes on dark colors that cannot
-        # be faded smoothly because the delta is too small.
-        thres_r = abs(r - self.r_target) > self.full_on * threshold
-        thres_g = abs(r - self.r_target) > self.full_on * threshold
-        thres_b = abs(r - self.r_target) > self.full_on * threshold
+        # By how many percent/100 of full_on does the color need to change
+        # in order to trigger a change of the LEDs?
+        # 'movie': Don't fade when the color delta is not large enough to fade smoothly.
+        # 'static': Always change the color on a new static-color request
+        threshold = {'movie': 0.015, 'static': 0}[mode]
 
-        if threshold == 0 or thres_r or thres_g or thres_b:
+        thres_r = abs(r - self.r_target) > self.full_on * threshold
+        thres_g = abs(g - self.g_target) > self.full_on * threshold
+        thres_b = abs(b - self.b_target) > self.full_on * threshold
+
+        if thres_r or thres_g or thres_b:
             self.working_on_color.acquire()
+            self.set_fading_speed(cps)
             self.r_target = max(0, min(self.full_on, r))
             self.g_target = max(0, min(self.full_on, g))
             self.b_target = max(0, min(self.full_on, b))
@@ -105,7 +119,18 @@ class Fader(Thread):
             self.g_start = self.g
             self.b_start = self.b
             self.fade_state = 0
+
+            # Higher frequency for static colors to potentially protect the eye.
+            # Lower ones for movies for smoother fading.
+            if mode == 'movie':
+                self.set_freq(self.gpio_freq_movie)
+            elif mode == 'static':
+                self.set_freq(self.gpio_freq_static)
+
+            self.constant_since = time.time()
             self.working_on_color.release()
+        else:
+            self.logger.info('delta color change was <= {}%'.format(threshold * 100))
 
 
     def set_fading_speed(self, checks_per_second, fader_frequency=200):
@@ -113,7 +138,6 @@ class Fader(Thread):
             Changes the smoothness and speed of the fading.
             Will continue to fade into the current target color.
         """
-        self.working_on_color.acquire()
         self.checks_per_second = max(1, checks_per_second)
         # how often the fader will iterate in order to
         # fade from start to target color
@@ -122,7 +146,6 @@ class Fader(Thread):
         self.r_start = self.r
         self.g_start = self.g
         self.b_start = self.b
-        self.working_on_color.release()
 
 
     def run(self):
@@ -142,7 +165,9 @@ class Fader(Thread):
             if self.checks >= 1:
 
                 if self.fade_state < 1:
+                    
                     self.fade_state += 1 / self.checks
+
                     # Add old and new color together proportionally
                     # so that a fading effect is created.
                     # Overwrite globals r, g and b so that when fading restarts,
@@ -154,7 +179,6 @@ class Fader(Thread):
                     self.set_pwm_dutycycle(self.gpio_g, self.g)
                     self.set_pwm_dutycycle(self.gpio_b, self.b)
                     # logger.info('{} {} {}'.format(r, g, b))
-                    self.constant_since = time.time()
 
                 else:
                     # after 3 minutes increase the LED frequency
@@ -166,9 +190,9 @@ class Fader(Thread):
                     # the server will take care of setting the
                     # frequency back to gpio_freq_movie
 
-                    self.set_pwm_dutycycle(self.gpio_r, self.r_target)
-                    self.set_pwm_dutycycle(self.gpio_g, self.g_target)
-                    self.set_pwm_dutycycle(self.gpio_b, self.b_target)
+                    # self.set_pwm_dutycycle(self.gpio_r, self.r_target)
+                    # self.set_pwm_dutycycle(self.gpio_g, self.g_target)
+                    # self.set_pwm_dutycycle(self.gpio_b, self.b_target)
 
             self.working_on_color.release()
 

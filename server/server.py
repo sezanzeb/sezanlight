@@ -64,12 +64,12 @@ NOTFOUND = 404
 BADREQUEST = 400
 
 # color modes
-SCREEN_COLOR = 1
-STATIC = 2
+SCREEN_COLOR = 'movie'
+STATIC = 'static'
 
 
 def create_fader_thread():
-    fader = Fader(gpio_r, gpio_g, gpio_b, full_on)
+    fader = Fader(gpio_r, gpio_g, gpio_b, full_on, logger)
     fader.start()
     return fader
 
@@ -86,7 +86,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         url = self.path # /?r=128&g=128&b=128
 
-        logger.info('\nrequest for {}'.format(url))
+        print(' ')
+        logger.info('request for {}'.format(url))
 
         if url == '/':
             url = '/index.html'
@@ -107,56 +108,52 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             params_split = url.split('?')[1].split('&')
             i = 0
             # example: ['r=048', 'g=1024.3', 'b=0', 'cps=1']
+
+            # default params:
             # keep current color by default if one channel is missing in the request:
-            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1}
+            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1, 'mode': 'static'}
+
             try:
                 while i < len(params_split):
                     key, value = params_split[i].split('=')
                     # interpret as integer, failsafe way
-                    params[key] = int(float(value))
+                    # except for those parameter that are supposed to be strings:
+                    if key in ['mode']:
+                        params[key] = value
+                    else:
+                        params[key] = int(float(value))
                     i += 1
             except:
-                self.send_response(CONFLICT)
+                self.send_response(400)
                 self.end_headers()
                 logger.info('could not parse: {} format correct? example: "<ip>:<port>/?r=2048&g=512&b=0&cps=1"'.format(url))
                 return
             # is now: {r: 48, g: 1024, b: 0, cps: 1}
 
-            # by how many percent/100 of full_on does the color need to change
-            # in order to trigger a change of the LEDs?
-            static_color_threshold = 0.015
-
             # 1. stop old connections when new connections arrive
             # 2. don't reject new connections because when an old connection is
             # dead some timeout would have to be checked and stuff. Might be even more
             # complex than what I'm doing at the moment.
-            if is_screen_color_feed(params):
+            if params['mode'] == 'movie':
 
-                # note that the fader increases the LED frequency when
-                # the color didn't change for a long enough period of time.
-                # This overwrites it. The client doesn't send messages when
-                # no color change is observed which is the reason why this
-                # doesn't overwrite the frequency immediatelly.
-                fader.set_freq(fader.gpio_freq_movie)
-
-                # first connected client ever?
-                if current_client_id == -1:
-                    current_client_id = params['id']
+                # if id in stoplist, then stop and reject
+                if params['id'] in stop_client_ids:
+                    logger.info('closing connection to {} ({})'.format(params['id'], self.client_address[0]))
+                    # now that it is rejected the client will stop if it
+                    # is a good client. Remove it from the stop_client_ids list
+                    # so that a random duplicate id will not be rejected in the future.
+                    stop_client_ids.remove(params['id'])
+                    self.send_response(CONFLICT)
+                    self.end_headers()
+                    return
                 else:
-                    # if id in stoplist, then stop and reject
-                    if params['id'] in stop_client_ids:
-                        logger.info('closing connection to {}'.format(params['id']))
-                        # now that it is rejected the client will stop if it
-                        # is a good client. Remove it from the stop_client_ids list
-                        # so that a random duplicate id will not be rejected in the future.
-                        stop_client_ids.remove(params['id'])
-                        self.send_response(CONFLICT)
-                        self.end_headers()
-                        return
-                    # if not in stop_client_ids and not the current client?
-                    # then it's a new client. prepare to accept from the new client
+                    # no conflict with other clients (-1)?
+                    if current_client_id == -1:
+                        current_client_id = params['id']
                     elif current_client_id != params['id']:
-                        # stop the old client
+                        # if not in stop_client_ids and not the current client?
+                        # then it's a new client. prepare to accept from the new client
+                        # and to reject from the old client
                         stop_client_ids += [current_client_id]
                         current_client_id = params['id']
                         logger.info('new connection from {}'.format(current_client_id))
@@ -166,14 +163,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 # stop the client that is currently feeding colors from a screen
                 # into the server
 
-                # for static colors, don't set a threshold of how much the color needs to change
-                static_color_threshold = 0
-
-                # higher frequency for eye health
-                # for static colors that are active
-                # for a longer period of time
-                fader.set_freq(fader.gpio_freq_static)
-
                 if current_client_id != -1:
                     # stop the old client
                     stop_client_ids += [current_client_id]
@@ -181,17 +170,15 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                     current_client_id = -1
                     logger.info('received static color')
 
-            fader.set_fading_speed(params['cps'])
-
             # fader is the thread object that just keeps fading forever,
             # whereas the main thread adjusts the members of the fader object
             if fader is None or not fader.is_alive():
                 # also check if still alive, restart if not
                 logger.error('fader not active anymore! restarting')
                 fader = create_fader_thread()
-                fader.start()
                 
-            fader.set_target(params['r'], params['g'], params['b'], static_color_threshold)
+            # now tell the fader what to do
+            fader.set_target(params['r'], params['g'], params['b'], params['cps'], params['mode'])
 
             # send ok
             self.send_response(OK)
