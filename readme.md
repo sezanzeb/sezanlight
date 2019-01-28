@@ -31,12 +31,12 @@ see https://github.com/sezanzeb/sezanlight/blob/master/install/install.md
 Just setting a single color once. Type
 
 ```
-192.168.2.110:3546
+192.168.1.100:3546
 ```
 
-into your browser (replace 192.168.2.110:3546 with your raspberries local ip and the port on which the server is running)
+into your browser (replace 192.168.1.100:3546 with your raspberries local ip and the port on which the server is running)
 
-and use the web tool
+and use the web tool. You can also use this to check if the server works, as no configuration on the client is needed for that.
 
 ## Future
 
