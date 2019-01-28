@@ -98,13 +98,20 @@ class LEDClient(Gtk.Window):
 
         # check if config file exists
         if not Path(self.config).exists():
+            # if not, see if the original config file exists and copy it to the user
             systemconfig = '/etc/sezanlight/config'
             if not Path(systemconfig).exists():
                 self.alert('package not properly installed, /etc/sezanlight/config missing',
                         'consult the installation instructions here: ' +
-                        'https://github.com/sezanzeb/sezanlight/blob/master/install/install.md')
+                        'https://github.com/sezanzeb/sezanlight/ or copy the config file from ' +
+                        'that online github repository to ~/.config/sezanlight/config')
+                exit()
+            try:
+                os.makedirs(str(Path(self.config).parent))
+            except FileExistsError:
+                # if the folder already exists that's fine
+                pass
             # now create config file in home
-            os.makedirs(str(Path(self.config).parent))
             copyfile(systemconfig, self.config)
 
 
@@ -146,13 +153,15 @@ class LEDClient(Gtk.Window):
                     config_dict['raspberry_port'] = 3546
                 return config_dict
         except FileNotFoundError:
-            self.alert('config not found', 'please try to reinstall the package or ' +
+            # This error is when the config was not copied from /etc/sezanlight/config to
+            # ~/.config/sezanlight/config which should happen at the start of the application.
+            # If both are missing, this application should complain at the beginning
+            self.alert('config not found', 'please try to restart the application or ' +
                     'download the config file from https://github.com/sezanzeb/sezanlight/blob/master/config ' +
                     'and place it in ~/.config/sezanlight/config')
 
 
     def set_static_color(self, button):
-
         # stop if config is faulty
         if not self.check_config():
             return
@@ -185,6 +194,9 @@ class LEDClient(Gtk.Window):
 
 
     def on_switch_activated(self, switch, gparam):
+        """
+            the switch controls the screen reading client
+        """
         if switch.get_active():
             # stop if config is faulty
             if not self.check_config():
