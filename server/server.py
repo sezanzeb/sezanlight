@@ -24,6 +24,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import logging
 from pathlib import Path
 from fader import Fader
+import configparser
 
 staticfiles = Path(Path(__file__).parent, 'static').absolute()
 logfile = Path(Path(__file__).parent, 'log')
@@ -35,15 +36,32 @@ logger.addHandler(handler)
 # also enable console output:
 logger.addHandler(logging.StreamHandler())
 
-# hardware setup
+# 0.0.0.0 works if you send requests from another local machine to the raspberry
+# 'localhost' would only allow requests from within the raspberry
+raspberry_ip = '0.0.0.0'
+
+# for the port I just went with some random unassigned port from this list:
+# https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
+raspberry_port = 3546
+
+# hardware setup (those are the pins used in https://dordnung.de/raspberrypi-ledstrip/)
 gpio_r = 17
 gpio_g = 22
 gpio_b = 24
 
-# 0.0.0.0 works if you send requests from another local machine to the raspberry
-# 'localhost' would only allow requests from within the raspberry
-raspberry_ip = '0.0.0.0'
-raspberry_port = 3546
+# read gpio pins and port from config file
+try:
+    config_path = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
+    with open(str(config_path)) as f:
+        config = configparser.RawConfigParser()
+        config.read_string('[root]\n' + f.read())
+        if 'gpio_r' in config['root']: gpio_r = int(config['root']['gpio_r'])
+        if 'gpio_g' in config['root']: gpio_g = int(config['root']['gpio_g'])
+        if 'gpio_b' in config['root']: gpio_b = int(config['root']['gpio_b'])
+        if 'raspberry_port' in config['root']: raspberry_port = int(config['root']['raspberry_port'])
+except FileNotFoundError:
+    logger.warning('config file could not be found! using pins {}, {} and {} and port {}'.format(gpio_r, gpio_g, gpio_b, raspberry_port))
+
 
 # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
 full_on = 20000

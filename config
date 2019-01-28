@@ -1,8 +1,5 @@
 # sezanlight configuration file
 
-# (the server doesn't read from this config file yet, there, the port and gpio pins are hard-coded)
-# for the port I just went with some random unassigned port from this list:
-# https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
 raspberry_port=3546
 gpio_r=17
 gpio_g=22
