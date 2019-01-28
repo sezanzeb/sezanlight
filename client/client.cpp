@@ -134,7 +134,7 @@ void parse_float_array(string strvalue, int size, float *array)
 }
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
     // default params:
 
@@ -169,10 +169,12 @@ int main(void)
     float increase_saturation = 0.5;
 
     // overwrite default params with params from config file
-    ifstream infile("../config");
+    ifstream infile(argv[1]);
     string line;
+    bool config_exists = false;
     while (getline(infile, line))
     {
+        config_exists = true;
         boost::trim(line);
 
         // skip comments
@@ -214,6 +216,12 @@ int main(void)
                 }
             }
         }
+    }
+
+    if(!config_exists)
+    {
+        cout << "error: config file could not be found. You need to specify the path to it as command line argument" << endl;
+        return 1;
     }
 
     if(raspberry_ip == "")
