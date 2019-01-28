@@ -17,7 +17,6 @@ license=("unlicense")
 depends=("curl" "boost" "libx11")
 makedepends=("git" "gcc")
 provides=("sezanlight")
-backup=() # TODO: config file location to preserve config file during updates
 source=("sezanlight::git+https://github.com/sezanzeb/sezanlight.git")
 sha256sums=("SKIP")
 
@@ -31,6 +30,11 @@ package() {
 	cd sezanlight/
     install -D client/gtk.py "${pkgdir}"/usr/bin/sezanlight
     install -D client/client.o "${pkgdir}"/usr/bin/sezanlight_screen_client
-    install -D --owner=$USER config "${pkgdir}"/$HOME/.config/sezanlight/config
+
+    # going to be copied over to users home dir on program start
+    # /$HOME/.config/sezanlight/config, because pacman should not modify /home apparently
+    # https://www.reddit.com/r/archlinux/comments/9h3ga2/pkgbuild_that_writes_in_one_users_home_directory/
+    install -D config "${pkgdir}"/etc/sezanlight/config
+
     install -D install/sezanlight.desktop "${pkgdir}"/usr/share/applications/sezanlight.desktop
 }

@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import requests
 import configparser
+from shutil import copyfile
 
 # GTK:
 # https://python-gtk-3-tutorial.readthedocs.io/en/latest/introduction.html
@@ -94,6 +95,17 @@ class LEDClient(Gtk.Window):
         # self.client = Path(Path(__file__).resolve().parent, Path('client.o'))
         self.config = str(Path.home()) + '/.config/sezanlight/config'
         self.client = 'sezanlight_screen_client' # binary in /usr/bin
+
+        # check if config file exists
+        if not Path(self.config).exists():
+            systemconfig = '/etc/sezanlight/config'
+            if not Path(systemconfig).exists():
+                self.alert('package not properly installed, /etc/sezanlight/config missing',
+                        'consult the installation instructions here: ' +
+                        'https://github.com/sezanzeb/sezanlight/blob/master/install/install.md')
+            # now create config file in home
+            os.makedirs(str(Path(self.config).parent))
+            copyfile(systemconfig, self.config)
 
 
     def alert(self, msg1, msg2):
