@@ -23,6 +23,9 @@ cd sezanlight
 python3 server/server.py
 ```
 
+Edit the config file in the repositories root if you are using gpios different from 1. or
+some port other than 3546.
+
 The server accepts the colors from the most recently seen client and rejects colors
 from older clients afterwards. As long as you don't have flatmates that try to mess with your
 LEDs, this should be fine. (This also makes development for me easier as I don't have to take
