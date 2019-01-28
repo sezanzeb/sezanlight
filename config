@@ -5,7 +5,7 @@ gpio_r=17
 gpio_g=22
 gpio_b=24
 
-raspberry_ip=192.168.2.50
+raspberry_ip=
 
 # how to read the screen:
 screen_width=1920

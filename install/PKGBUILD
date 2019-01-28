@@ -1,0 +1,36 @@
+# PKGBUILD for the client
+# server should be installed using a different method:
+# https://github.com/sezanzeb/sezanlight/blob/master/install.md#2-server
+
+# useful links:
+# https://wiki.archlinux.org/index.php/PKGBUILD
+# https://wiki.archlinux.org/index.php/Creating_packages
+
+# Maintainer: Tobias B <https://github.com/sezanzeb>
+pkgname=sezanlight
+pkgver=0.0
+pkgrel=1
+pkgdesc="Illuminates LEDs connected to gpios of a Raspberry on which the server runs"
+arch=("x86_64")
+url="https://github.com/sezanzeb/sezanlight"
+license=("unlicense")
+depends=("curl" "boost" "libx11")
+makedepends=("git" "gcc")
+provides=("sezanlight")
+backup=() # TODO: config file location to preserve config file during updates
+source=("sezanlight::git+https://github.com/sezanzeb/sezanlight.git")
+sha256sums=("SKIP")
+
+build() {
+	cd sezanlight/client/
+	make
+    chmod +x gtk.py
+}
+
+package() {
+	cd sezanlight/
+    install -D client/gtk.py "${pkgdir}"/usr/bin/sezanlight
+    install -D client/client.o "${pkgdir}"/usr/bin/sezanlight_screen_client
+    install -D --owner=$USER config "${pkgdir}"/$HOME/.config/sezanlight/config
+    install -D install/sezanlight.desktop "${pkgdir}"/usr/share/applications/sezanlight.desktop
+}

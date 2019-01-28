@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Sezanlight
+GenericName=LED Client
+X-GNOME-FullName=Sezanlight LED Client
+Comment=Control SMD5050 LED strips connected to a raspberry
+Exec=sezanlight
+Icon=preferences-desktop-display
+Terminal=false
+Type=Application
+Categories=Other;
+Keywords=LED;
+StartupNotify=true

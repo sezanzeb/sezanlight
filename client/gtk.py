@@ -90,11 +90,61 @@ class LEDClient(Gtk.Window):
         self.client_process = None
 
         # find files
-        self.config = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
-        self.client = Path(Path(__file__).resolve().parent, Path('client.o'))
+        # self.config = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
+        # self.client = Path(Path(__file__).resolve().parent, Path('client.o'))
+        self.config = str(Path.home()) + '/.config/sezanlight/config'
+        self.client = 'sezanlight_screen_client' # binary in /usr/bin
+
+
+    def alert(self, msg1, msg2):
+        dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK, text=msg1)
+        dialog.format_secondary_text(msg2)
+        dialog.run()
+        dialog.destroy()
+
+
+    def check_config(self):
+        """
+            check if config contains all the values that are absolutely necessary
+            which is the ip of the raspberry. Alerts and returns False if not,
+            returns True if yes.
+        """
+        config = self.read_config()
+        if 'raspberry_ip' in config and config['raspberry_ip'] != '':
+            return True
+        else:
+            self.alert('please provide a value for raspberry_ip in the config',
+                    'find out the raspberries ip using "ifconfig" on the pi or "sudo arp-scan --localnet", ' +
+                    'then press "edit config" in the application and insert it like "raspberry_ip=192.168.1.100"')
+            return False
+
+
+    def read_config(self):
+        """
+            returns a dict containing the values in config
+        """ 
+        try:
+            with open(self.config) as f:
+                config = configparser.RawConfigParser()
+                config.read_string('[root]\n' + f.read())
+                config_dict = {key: config['root'][key] for key in config['root']}
+                # default values:
+                if not 'raspberry_port' in config_dict or config_dict['raspberry_port'] == '':
+                    config_dict['raspberry_port'] = 3546
+                return config_dict
+        except FileNotFoundError:
+            self.alert('config not found', 'please try to reinstall the package or ' +
+                    'download the config file from https://github.com/sezanzeb/sezanlight/blob/master/config ' +
+                    'and place it in ~/.config/sezanlight/config')
 
 
     def set_static_color(self, button):
+
+        # stop if config is faulty
+        if not self.check_config():
+            return
+
         self.switch.set_active(0)
         self.stop_client()
         full_on = 20000
@@ -104,29 +154,30 @@ class LEDClient(Gtk.Window):
             g = int(float(self.g_entry.get_text()) * full_on / 255)
             b = int(float(self.b_entry.get_text()) * full_on / 255)
         except:
-            dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.ERROR,
-                    buttons=Gtk.ButtonsType.OK, text='number could not be read')
-            dialog.format_secondary_text('please re-check your r, g and b input.')
-            dialog.run()
-            dialog.destroy()
+            self.alert('number could not be read', 'please re-check your r, g and b input.')
             return
 
-        with open(str(self.config)) as f:
-            config = configparser.RawConfigParser()
-            config.read_string('[root]\n' + f.read())
-            raspberry_ip = config['root']['raspberry_ip']
-            raspberry_port = config['root']['raspberry_port']
-            url = 'http://{}:{}/color/set/?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
-            print(url)
-            requests.get(url)
+        config = self.read_config()
+        raspberry_ip = config['raspberry_ip']
+        raspberry_port = config['raspberry_port']
+        url = 'http://{}:{}/color/set/?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
+        requests.get(url)
 
 
     def open_config(self, button):
+        """
+            displays a text-editor to edit the config
+        """
+        print(self.config)
         subprocess.Popen(['xdg-open', str(self.config)])
 
 
     def on_switch_activated(self, switch, gparam):
         if switch.get_active():
+            # stop if config is faulty
+            if not self.check_config():
+                self.switch.set_active(0)
+                return
             self.client_process = subprocess.Popen([str(self.client), str(self.config)])
         else:
             self.stop_client()
