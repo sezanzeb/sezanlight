@@ -3,7 +3,10 @@
 .vscode
 config
 log
-
+install/pkg
+install/sezanlight/
+install/sezanlight-*
+isntall/src
 
 # c++
 
