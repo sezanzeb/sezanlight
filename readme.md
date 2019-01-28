@@ -17,6 +17,9 @@ set to 400hz in order to provide smooth fading colors (lower frequency results i
 **somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
 
+![](https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png)
+![](https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.png)
+
 ## Usage
 
 see https://github.com/sezanzeb/sezanlight/blob/master/install.md

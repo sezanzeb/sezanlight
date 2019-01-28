@@ -75,7 +75,19 @@ raspberry_ip=192.168.1.100
 then compile the source and run the client. cd to the cloned repository:
 
 ```
-cd client && make && ./client.o
+cd client && make
+```
+
+to run either
+
+```
+./client.o ../config
+```
+
+or
+
+```
+python3 gtk.py
 ```
 
 Note, that the client stops sending when the server cannot be reached anymore, so make
