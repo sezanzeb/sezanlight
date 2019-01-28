@@ -4,7 +4,7 @@
 If this guide for some reason does not seem to be clear to you, if you are stuck or if something doesn't work,
 don't hesitate to submit an issue on github.
 
-## 1. set up your LEDs
+## 1. Set Up your LEDs
 
 My RGB-strip setup is this one: https://dordnung.de/raspberrypi-ledstrip/
 
@@ -42,7 +42,7 @@ if you are using something different, take a look at manual_install.md
 
 to **uninstall**, use `pacman -R sezanlight`
 
-## 4. (optional) Add server to raspberries autostart
+## 4. Automatically Start Raspberry Server
 
 Once you know that the stuff is working you can go ahead and add it to autostart
 if you want on the pi.
