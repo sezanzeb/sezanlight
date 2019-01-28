@@ -24,7 +24,7 @@ set to 400hz in order to provide smooth fading colors (lower frequency results i
 
 ## Usage
 
-see https://github.com/sezanzeb/sezanlight/blob/master/install.md
+see https://github.com/sezanzeb/sezanlight/blob/master/install/install.md
 
 ## Static Colors (Web Frontend)
 

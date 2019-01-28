@@ -1,6 +1,6 @@
 # PKGBUILD for the client
 # server should be installed using a different method:
-# https://github.com/sezanzeb/sezanlight/blob/master/install.md#2-server
+# https://github.com/sezanzeb/sezanlight/blob/master/install/install.md#2-server
 
 # useful links:
 # https://wiki.archlinux.org/index.php/PKGBUILD
