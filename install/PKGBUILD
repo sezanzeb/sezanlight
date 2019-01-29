@@ -8,7 +8,7 @@
 
 # Maintainer: Tobias B <https://github.com/sezanzeb>
 pkgname=sezanlight
-pkgver=0.0
+pkgver=1.0
 pkgrel=1
 pkgdesc="Illuminates LEDs connected to gpios of a Raspberry on which the server runs"
 arch=("x86_64")
