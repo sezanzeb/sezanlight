@@ -19,6 +19,9 @@ set to 400hz in order to provide smooth fading colors (lower frequency results i
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png">
 </p>
 <p align="center">
+  <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/photo.jpg">
+</p>
+<p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.png">
 </p>
 
