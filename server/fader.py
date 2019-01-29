@@ -104,11 +104,11 @@ class Fader(Thread):
         # 'static': Always change the color on a new static-color request
         threshold = {'movie': 0.015, 'static': 0}[mode]
 
-        thres_r = abs(r - self.r_target) > self.full_on * threshold
-        thres_g = abs(g - self.g_target) > self.full_on * threshold
-        thres_b = abs(b - self.b_target) > self.full_on * threshold
+        delta_r = abs(r - self.r_target)
+        delta_g = abs(g - self.g_target)
+        delta_b = abs(b - self.b_target)
 
-        if thres_r or thres_g or thres_b:
+        if (delta_r + delta_g + delta_b) > self.full_on * threshold:
             self.working_on_color.acquire()
             self.set_fading_speed(cps)
             self.r_target = max(0, min(self.full_on, r))

@@ -447,24 +447,15 @@ int main(int argc, char *argv[])
             cout << "temperature fix : " << r << " " << g << " " << b << endl;
 
 
-            // for VERY dark colors, don't shove those changes onto the color too much
-            // and also make it more gray to prevent supersaturated colors like (0, 1, 0).
-            // For this, have a float filter_strength that is between 0.5 and 1 for dark colors,
-            // (filter strength of 0 means: take original color without e.g. color temperature adjustments)
-            // and 1 for all other colors.
+            // for VERY dark colors, make it more gray to prevent supersaturated colors like (0, 1, 0).
             float darkness = (float)((r_old + g_old + b_old) / 3) / full_on;
-            float filter_strength = max(0.5f, min(0.15f, darkness) / 0.15f);
-            float greyscaling = max(0.0f, min(0.05f, darkness) / 0.05f);
-            if(greyscaling < 1 or filter_strength < 1)
+            float greyscaling = max(0.0f, min(0.085f, darkness) / 0.085f);
+            if(greyscaling < 1)
             {
                 // for super dark colors, just use gray
                 if(darkness < 0.01)
                     greyscaling = 0;
-                // 1. reverse the filters a bit for dark colors 
-                r = (filter_strength) * r + (1 - filter_strength) * r_old;
-                g = (filter_strength) * g + (1 - filter_strength) * g_old;
-                b = (filter_strength) * b + (1 - filter_strength) * b_old;
-                // 2. make dark colors more grey
+                // make dark colors more grey
                 float mean = (r + g + b) / 3;
                 r = (greyscaling) * r + (1 - greyscaling) * mean;
                 g = (greyscaling) * g + (1 - greyscaling) * mean;
