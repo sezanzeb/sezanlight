@@ -31,14 +31,18 @@ care about stopping old clients anymore that run on a different machine)
 
 on your client (the X11 device you use to watch videos, etc.):
 
-for arch/manjaro:
+for **arch/manjaro**, a PKGBUILD file for pacman is available:
 
 ```
-cd install
+mkdir sezanlight_tmp
+cd sezanlight_tmp
+wget https://raw.githubusercontent.com/sezanzeb/sezanlight/master/install/PKGBUILD
 makepkg --install
+cd ..
+sudo rm sezanlight_tmp -r
 ```
 
-if you are using something different, take a look at manual_install.md
+If you are using something different **(ubuntu)**, take a look at https://github.com/sezanzeb/sezanlight/blob/master/install/manual_install.md
 
 to **uninstall**, use `pacman -R sezanlight`
 
@@ -49,7 +53,8 @@ if you want on the pi.
 
 **4.1 init.d service**
 
-Assuming you are running Raspbian on your pi (Debian based):
+Assuming you are running **Raspbian** on your pi (Debian based), **edit install/initscript to fit your
+path into which you cloned the repo and your pi's username**, then do:
 
 ```bash
 sudo cp initscript /etc/init.d/sezanlight
