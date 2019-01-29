@@ -31,32 +31,14 @@ see https://github.com/sezanzeb/sezanlight/blob/master/install/install.md
 Just setting a single color once. Type
 
 ```
-192.168.2.110:3546
+192.168.1.100:3546
 ```
 
-into your browser (replace 192.168.2.110:3546 with your raspberries local ip and the port on which the server is running)
+into your browser (replace 192.168.1.100:3546 with your raspberries local ip and the port on which the server is running)
 
-and use the web tool
+and use the web tool. You can also use this to check if the server works, as no configuration on the client is needed for that.
 
 ## Future
-
-**configuration tool**
-
-GTK tool for color wheel selection, config editing, mode selection. I want to use GTK because I'm a fan of xfce.
-
-Web Frontend that runs on the raspberry, which can be accessed from any device in order to set the color statically.
-
-**visualize sound**
-
-use one of the R, G and B channels for lows, mids and highs or something. Use bandpassing, lowcut and highcut for that.
-
-per channel, use a sliding window and determine max value of abs of the samples in that window. Normalize it to
-between 0 and 255. Send it to the raspberry afterwards.
-
-Encode in the get request that the music mode is active so that the raspberry quickly reacts to the request instead of
-fading it slowly.
-
-This signal processing stuff I certainly will do in python and not in c++.
 
 see what this xshmgetimage stuff is and if it is faster if it does something similar:
 - https://stackoverflow.com/questions/43442675/how-to-use-xshmgetimage-and-xshmputimage 
