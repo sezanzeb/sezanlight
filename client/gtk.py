@@ -101,8 +101,8 @@ class LEDClient(Gtk.Window):
             # if not, see if the original config file exists and copy it to the user
             systemconfig = '/etc/sezanlight/config'
             if not Path(systemconfig).exists():
-                self.alert('package not properly installed, /etc/sezanlight/config missing',
-                        'consult the installation instructions here: ' +
+                self.alert('Package not properly installed, /etc/sezanlight/config missing!',
+                        'Consult the installation instructions here: ' +
                         'https://github.com/sezanzeb/sezanlight/ or copy the config file from ' +
                         'that online github repository to ~/.config/sezanlight/config')
                 exit()
@@ -133,8 +133,8 @@ class LEDClient(Gtk.Window):
         if 'raspberry_ip' in config and config['raspberry_ip'] != '':
             return True
         else:
-            self.alert('please provide a value for raspberry_ip in the config',
-                    'find out the raspberries ip using "ifconfig" on the pi or "sudo arp-scan --localnet", ' +
+            self.alert('Please provide a value for raspberry_ip in the config!',
+                    'Find out the raspberries ip using "ifconfig" on the pi or "sudo arp-scan --localnet", ' +
                     'then press "edit config" in the application and insert it like "raspberry_ip=192.168.1.100"')
             return False
 
@@ -156,7 +156,7 @@ class LEDClient(Gtk.Window):
             # This error is when the config was not copied from /etc/sezanlight/config to
             # ~/.config/sezanlight/config which should happen at the start of the application.
             # If both are missing, this application should complain at the beginning
-            self.alert('config not found', 'please try to restart the application or ' +
+            self.alert('Config not found!', 'Please try to restart the application or ' +
                     'download the config file from https://github.com/sezanzeb/sezanlight/blob/master/config ' +
                     'and place it in ~/.config/sezanlight/config')
 
@@ -175,14 +175,18 @@ class LEDClient(Gtk.Window):
             g = int(float(self.g_entry.get_text()) * full_on / 255)
             b = int(float(self.b_entry.get_text()) * full_on / 255)
         except:
-            self.alert('number could not be read', 'please re-check your r, g and b input.')
+            self.alert('Number could not be read!', 'Please re-check your r, g and b input.')
             return
 
         config = self.read_config()
         raspberry_ip = config['raspberry_ip']
         raspberry_port = config['raspberry_port']
         url = 'http://{}:{}/color/set/?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
-        requests.get(url)
+        try:
+            # 1s timeout in a local network is more than enough
+            requests.get(url, timeout=1)
+        except requests.exceptions.ConnectTimeout:
+            self.alert('Cannot reach server!', 'Check if the Raspberries IP in your config is correct, if your PC is able to ping the Raspberry and if yes, restart the server there.')
 
 
     def open_config(self, button):
