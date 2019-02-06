@@ -34,29 +34,33 @@ float timeout = 0;
 using namespace std;
 
 
-long int get_us()
+long get_us()
 {
     /* this function returns the microseconds since 1970 */
     struct timeval time;
     gettimeofday(&time, NULL);
-    long int us = time.tv_sec * 1000000 + time.tv_usec;
+    long us = time.tv_sec * 1000000 + time.tv_usec;
     return us;
 }
 
 
-void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, int client_id, string mode)
+void sendcolor(int r, int g, int b, char * ip, int port, int checks_per_second,
+        int client_id, string mode, int max_timeout, long * last_message_timestamp,
+        int verbose_level)
 {
     /* seoncds a get request to the LED server using curl
-     * r, g and b are the colors between 0 and full_on
-     * ip and port those of the raspberry
-     * check_per_second is how often this client will (try to) make such reqeusts per seoncds
-     * client_id is an identifier for the current "stream" of messages from this client
-     * mode should be SCREEN_COLOR */
+     * - r, g and b are the colors between 0 and full_on
+     * - ip and port those of the raspberry
+     * - check_per_second is how often this client will (try to) make such reqeusts per seoncds
+     * - client_id is an identifier for the current "stream" of messages from this client
+     * - mode should be SCREEN_COLOR
+     * - max_timeout is read from the config file. it's an integer of seconds. The code will stop when
+     * no communication is received within that amount of time.
+     * - last_message_timestamp is a pointer to a get_us() value of the last successful communciation */
 
     CURL *curl;
 
     int handle_count;
-    int max_timeout = 5;
 
     curl = curl_easy_init();
     if(curl)
@@ -65,11 +69,12 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
         sprintf(url, "%s:%d/color/set/?r=%d&g=%d&b=%d&cps=%d&id=%d&mode=%s", 
                 ip, port, r, g, b, checks_per_second, client_id, mode.c_str());
 
-        cout << "sending GET pramas: " << url << "\n";
+        if(verbose_level >= 1) cout << "sending GET pramas: " << url << "\n";
 
-        long int start = get_us();
         curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+        // 1 second timeout for curl, which might add up
+        // to max_timeout for multiple lost messages.
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
         CURLcode status = curl_easy_perform(curl);
         long http_code = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
@@ -86,10 +91,10 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
         // check if server is available if for 5 seconds no color reached it
         if(status != CURLE_OK)
         {
-            // one check every 1/cps seconds, so add that as well
-            int delta = (get_us() - start) / 1000000;
-            timeout += delta + 1.0 / checks_per_second;
-            if(timeout >= max_timeout) // 5 seconds timeout
+            // how much time passed since the last successful communication?
+            float timeout = (float)(get_us() - *last_message_timestamp) / 1000000;
+
+            if(timeout >= max_timeout)
             {
                 cout << "timeout! cannot reach server!" << endl;
                 exit(1);
@@ -101,7 +106,7 @@ void sendcolor(int r, int g, int b, char *ip, int port, int checks_per_second, i
         }
         else
         {
-            timeout = 0;
+            *last_message_timestamp = get_us();
         }
     }
 }
@@ -134,7 +139,7 @@ void parse_float_array(string strvalue, int size, float *array)
 }
 
 
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
     // default params:
 
@@ -152,6 +157,8 @@ int main(int argc, char *argv[])
     string raspberry_ip = "";
     int raspberry_port = 3546;
 
+    int max_timeout = 10;
+
     // colors
     // if true, will use a window average for smoothing
     // if false, weights the old color by smoothing and averages,
@@ -167,6 +174,9 @@ int main(int argc, char *argv[])
     bool normalize_sum = true;
     // 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
     float increase_saturation = 0.5;
+
+    // some debugging stuff
+    int verbose_level = 1;
 
     // overwrite default params with params from config file
     ifstream infile(argv[1]);
@@ -209,6 +219,8 @@ int main(int argc, char *argv[])
                     else if(key == "brightness") parse_float_array(strvalue, 3, brightness);
                     else if(key == "gamma") parse_float_array(strvalue, 3, gamma);
                     else if(key == "linear_smoothing") linear_smoothing = stoi(strvalue);
+                    else if(key == "max_timeout") max_timeout = stoi(strvalue);
+                    else if(key == "verbose_level") verbose_level = stoi(strvalue);
                 }
                 catch (invalid_argument e)
                 {
@@ -282,11 +294,16 @@ int main(int argc, char *argv[])
     // i is the current po
     int i = 0;
 
+    // assume a working condition in the beginning,
+    // this is passed to sendcolor as a pointer and overwritten there
+    // on successful communications
+    long last_message_timestamp = get_us();
+
     // loop forever, reading the screen
     while(true)
     {
 
-        long int start = get_us();
+        long start = get_us();
 
         // work on floats in order to prevent rounding errors that add up
         float r = 1;
@@ -346,12 +363,14 @@ int main(int argc, char *argv[])
         r = r / lines;
         g = g / lines;
         b = b / lines;
-        cout << "observed color  : " << r << " " << g << " " << b << endl;
+        if(verbose_level >= 2) cout << "observed color  : " << r << " " << g << " " << b << endl;
 
         // only do stuff if the color changed.
-        // If the smoothed color (*_old) is equal to the observed color,
-        // skip
-        if(r != r_old and g != g_old and b != b_old)
+        // the server only fades when the new color exceeds a threshold of 2.5% of full_on
+        // in the added deltas. to not waste computational power of the pi and network bandwith,
+        // do nothing.
+        float delta_clr = abs(r - r_old) + abs(g - g_old) + abs(b - b_old);
+        if(delta_clr > full_on * 0.025)
         {
             // don't overreact to sudden changes
             if(smoothing > 0)
@@ -383,7 +402,7 @@ int main(int argc, char *argv[])
                     b = (b_old * smoothing + b) / (smoothing + 1);
                 }
 
-                cout << "smoothed color  : " << r << " " << g << " " << b << endl;
+                if(verbose_level >= 2) cout << "smoothed color  : " << r << " " << g << " " << b << endl;
             }
 
             // make sure to do this directly after the smoothing
@@ -410,7 +429,7 @@ int main(int argc, char *argv[])
                 r = r * old_max / new_max;
                 g = g * old_max / new_max;
                 b = b * old_max / new_max;
-                cout << "saturated color : " << r << " " << g << " " << b << endl;
+                if(verbose_level >= 2) cout << "saturated color : " << r << " " << g << " " << b << endl;
             }
 
             if(normalize > 0)
@@ -428,7 +447,7 @@ int main(int argc, char *argv[])
                     g = g * (1 - normalize) + g * new_max / old_max * normalize;
                     b = b * (1 - normalize) + b * new_max / old_max * normalize;
                 }
-                cout << "normalized color: " << r << " " << g << " " << b << endl;
+                if(verbose_level >= 2) cout << "normalized color: " << r << " " << g << " " << b << endl;
             }
 
             // correct led color temperature
@@ -444,7 +463,7 @@ int main(int argc, char *argv[])
             r = min(full_on, max(0.0f, r));
             g = min(full_on, max(0.0f, g));
             b = min(full_on, max(0.0f, b));
-            cout << "temperature fix : " << r << " " << g << " " << b << endl;
+            if(verbose_level >= 2) cout << "temperature fix : " << r << " " << g << " " << b << endl;
 
 
             // for VERY dark colors, make it more gray to prevent supersaturated colors like (0, 1, 0).
@@ -460,15 +479,15 @@ int main(int argc, char *argv[])
                 r = (greyscaling) * r + (1 - greyscaling) * mean;
                 g = (greyscaling) * g + (1 - greyscaling) * mean;
                 b = (greyscaling) * b + (1 - greyscaling) * mean;
-                cout << "dark color fix  : " << r << " " << g << " " << b << endl;
+                if(verbose_level >= 2) cout << "dark color fix  : " << r << " " << g << " " << b << endl;
             }
 
             // send to the server for the illumination of the LEDs
-            sendcolor((int)r, (int)g, (int)b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second, client_id, SCREEN_COLOR);
+            sendcolor((int)r, (int)g, (int)b, (char *)raspberry_ip.c_str(), raspberry_port, checks_per_second, client_id, SCREEN_COLOR, max_timeout, &last_message_timestamp, verbose_level);
         }
         else
         {
-            cout << "color did not change; skipping" << endl;
+            if(verbose_level >= 1) cout << "color did not change or is too identical; skipping" << endl;
         }
 
         // 1000000 is one second
@@ -476,8 +495,8 @@ int main(int argc, char *argv[])
         // don't only look for the server executable in your cpu usage,
         // also look for /usr/lib/Xorg cpu usage
         int delta = get_us() - start;
-        cout << "calculating and sending: " << delta << "us" << endl;
-        cout << endl;
+        if(verbose_level >= 1) cout << "calculating and sending: " << delta << "us" << endl;
+        if(verbose_level >= 2) cout << endl;
         // try to check the screen colors once every second (or whatever the checks_per_second param is)
         // so substract the delta or there might be too much waiting time between each check
         usleep(max(0, 1000000 / checks_per_second - delta));
