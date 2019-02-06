@@ -6,10 +6,6 @@ that has single-color rgb lights, which are controlled using one PWM gpio pin pe
 It sparsly checks a few places on the screen (150 pixels by default) and puts extra weight
 on those with high saturation.
 
-It uses:
-- 400hz for movies/computer screens to provide higher resolution color fades
-- 2000hz for static colors to reduce potential eye strain
-
 **worked with:**
 - manjaro xfce
 
@@ -39,6 +35,11 @@ more jaggy, which is very noticable on dark colors. Even though I have done my b
 an experience as pleasing as possible for dark colors, you might want to consider to only have
 half as many LEDs as I have (I have 150 SMD 5050 12v LEDs) if you only want to watch movies
 and not illuminate your room.
+
+I would love to have a high PWM frequency to eliminate all the potential eye strain, however, this would
+also reduce the resolution of duty cicles that can be set. It uses:
+- 400hz for movies/computer screens to provide higher resolution color fades (might add 200hz mode for even smoother fades, which is what a lot of computer screens use)
+- 2000hz for static colors to reduce potential eye strain. The server automatically switches to 2000hz if the color doesn't change for a long enough period of time
 
 ## Static Colors (Web Frontend)
 
