@@ -41,6 +41,8 @@ also reduce the resolution of duty cicles that can be set. It uses:
 - 400hz for movies/computer screens to provide higher resolution color fades (might add 200hz mode for even smoother fades, which is what a lot of computer screens use)
 - 2000hz for static colors to reduce potential eye strain. The server automatically switches to 2000hz if the color doesn't change for a long enough period of time
 
+The colors flicker when the Raspberry is under (network?) load (noticable when e.g. sending long terminal outputs over ssh via cat or similar). The flickers become more noticable on high PWM frequencies. Hence I needed to try to reduce the network traffic as much as possible (which also saves computational time in the server code) and also I cannot set the static frequency any higher.
+
 ## Static Colors (Web Frontend)
 
 Just setting a single color once. Type
