@@ -48,7 +48,7 @@ CONFLICT = 409
 NOTFOUND = 404
 BADREQUEST = 400
 # color modes
-SCREEN_COLOR = 'movie'
+SCREEN_COLOR = 'continuous'
 STATIC_COLOR = 'static'
 
 
