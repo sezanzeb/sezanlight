@@ -19,7 +19,7 @@
 #include <boost/algorithm/string.hpp>
 
 // color modes
-#define SCREEN_COLOR "movie"
+#define SCREEN_COLOR "continuous"
 #define STATIC "static"
 
 // error codes
