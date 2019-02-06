@@ -37,7 +37,7 @@ for **arch/manjaro**, a PKGBUILD file for pacman is available:
 mkdir sezanlight_tmp
 cd sezanlight_tmp
 wget https://raw.githubusercontent.com/sezanzeb/sezanlight/master/install/PKGBUILD
-makepkg --install
+makepkg -is
 cd ..
 sudo rm sezanlight_tmp -r
 ```
