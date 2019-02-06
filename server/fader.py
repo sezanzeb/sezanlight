@@ -11,15 +11,21 @@ import traceback
 
 class Fader(Thread):
 
-    def __init__(self, gpio_r, gpio_g, gpio_b, full_on, logger):
+    def __init__(self, config, logger):
 
         # the semaphore on order to maintain integrity of
         # smooth fading despite incoming requests
         self.working_on_color = Semaphore()
 
-        self.gpio_r = gpio_r
-        self.gpio_g = gpio_g
-        self.gpio_b = gpio_b
+        # hardware setup (those are the pins used in https://dordnung.de/raspberrypi-ledstrip/)
+        self.gpio_r = 17
+        self.gpio_g = 22
+        self.gpio_b = 24
+
+        # read gpio pins and port from config file
+        if 'gpio_r' in config['root']: gpio_r = int(config['root']['gpio_r'])
+        if 'gpio_g' in config['root']: gpio_g = int(config['root']['gpio_g'])
+        if 'gpio_b' in config['root']: gpio_b = int(config['root']['gpio_b'])
 
         # color which is used as the fading starting color
         self.r_start = 0
@@ -37,7 +43,8 @@ class Fader(Thread):
         self.b = 0
 
         # what is the maximum possible color value
-        self.full_on = full_on
+        # http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
+        self.full_on = 20000
 
         # how fast the client reads their screen
         # default to 1 per second
@@ -49,21 +56,28 @@ class Fader(Thread):
         self.constant_since = time.time()
 
         # setup the PWM
-        pi.set_PWM_range(gpio_r, full_on)
-        pi.set_PWM_range(gpio_g, full_on)
-        pi.set_PWM_range(gpio_b, full_on)
+        pi.set_PWM_range(gpio_r, self.full_on)
+        pi.set_PWM_range(gpio_g, self.full_on)
+        pi.set_PWM_range(gpio_b, self.full_on)
         # higher resolution for color changes
         # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
-        self.gpio_freq_movie = 400 # lower frequencies increase duticycle resolution. 2500 colors
-        self.gpio_freq_static = 2500 # 400 colors. Have that frequency higher to protect the eye
+        self.gpio_freq_movie = 400 # lower frequencies increases duticycle resolution. 2500 colors
+        self.gpio_freq_static = 2000 # Have that frequency higher to protect the eye
         self.current_freq = 0
 
         self.logger = logger
 
         # complete thread creation
         Thread.__init__(self)
-        
-            
+
+
+    def get_color(self, normalize=255):
+        r = int(self.r * normalize / self.full_on)
+        g = int(self.g * normalize / self.full_on)
+        b = int(self.b * normalize / self.full_on)
+        return (r, g, b)
+
+
     def set_freq(self, freq):
         """
             sets the frequency of the gpio PWM signal.
@@ -102,7 +116,7 @@ class Fader(Thread):
         # in order to trigger a change of the LEDs?
         # 'movie': Don't fade when the color delta is not large enough to fade smoothly.
         # 'static': Always change the color on a new static-color request
-        threshold = {'movie': 0.015, 'static': 0}[mode]
+        threshold = {'movie': 0.025, 'static': 0}[mode]
 
         delta_r = abs(r - self.r_target)
         delta_g = abs(g - self.g_target)
@@ -133,7 +147,7 @@ class Fader(Thread):
             self.logger.info('delta color change was <= {}%'.format(threshold * 100))
 
 
-    def set_fading_speed(self, checks_per_second, fader_frequency=200):
+    def set_fading_speed(self, checks_per_second, fader_frequency=60):
         """
             Changes the smoothness and speed of the fading.
             Will continue to fade into the current target color.
@@ -156,7 +170,7 @@ class Fader(Thread):
         """
 
         while True:
-            
+
             start = time.time()
             # f will move from 0 to 1
 
@@ -165,20 +179,27 @@ class Fader(Thread):
             if self.checks >= 1:
 
                 if self.fade_state < 1:
-                    
-                    self.fade_state += 1 / self.checks
 
-                    # Add old and new color together proportionally
-                    # so that a fading effect is created.
-                    # Overwrite globals r, g and b so that when fading restarts,
-                    # that is going to be the new starting color.
-                    self.r = (self.r_start * (1 - self.fade_state) + self.r_target * self.fade_state)
-                    self.g = (self.g_start * (1 - self.fade_state) + self.g_target * self.fade_state)
-                    self.b = (self.b_start * (1 - self.fade_state) + self.b_target * self.fade_state)
-                    self.set_pwm_dutycycle(self.gpio_r, self.r)
-                    self.set_pwm_dutycycle(self.gpio_g, self.g)
-                    self.set_pwm_dutycycle(self.gpio_b, self.b)
-                    # logger.info('{} {} {}'.format(r, g, b))
+                    self.fade_state += 1 / self.checks
+                    if self.fade_state > 1:
+                        # the fade_state might have been something like 0.99999
+                        # when it should be 1. Avoid this problem by another check for > 1
+                        # after increasing the fade_state. Also make sure fade_state is in
+                        # consistent state when finished, hence min(1, ...) it
+                        self.fade_state = min(1, self.fade_state)
+                    else:
+                        # Add old and new color together proportionally
+                        # so that a fading effect is created.
+                        # Overwrite globals r, g and b so that when fading restarts,
+                        # that is going to be the new starting color.
+                        self.r = max(1, self.r_start * (1 - self.fade_state) + self.r_target * self.fade_state)
+                        self.g = max(1, self.g_start * (1 - self.fade_state) + self.g_target * self.fade_state)
+                        self.b = max(1, self.b_start * (1 - self.fade_state) + self.b_target * self.fade_state)
+                        print(self.fade_state, self.r_target, self.g_target, self.b_target)
+                        self.set_pwm_dutycycle(self.gpio_r, self.r)
+                        self.set_pwm_dutycycle(self.gpio_g, self.g)
+                        self.set_pwm_dutycycle(self.gpio_b, self.b)
+                        # logger.info('{} {} {}'.format(r, g, b))
 
                 else:
                     # after 3 minutes increase the LED frequency
