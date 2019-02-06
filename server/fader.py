@@ -61,7 +61,7 @@ class Fader(Thread):
         pi.set_PWM_range(gpio_b, self.full_on)
         # higher resolution for color changes
         # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
-        self.gpio_freq_movie = 400 # lower frequencies increases duticycle resolution. 2500 colors
+        self.gpio_freq_continuous = 400 # lower frequencies increases duticycle resolution. 2500 colors
         self.gpio_freq_static = 2000 # Have that frequency higher to protect the eye
         self.current_freq = 0
 
@@ -109,14 +109,14 @@ class Fader(Thread):
             send approximately per second, or rather, how fast the
             color should fade.
 
-            mode can be 'static' or 'movie'.
+            mode can be 'static' or 'continuous'.
         """
 
         # By how many percent/100 of full_on does the color need to change
         # in order to trigger a change of the LEDs?
-        # 'movie': Don't fade when the color delta is not large enough to fade smoothly.
+        # 'continuous': Don't fade when the color delta is not large enough to fade smoothly.
         # 'static': Always change the color on a new static-color request
-        threshold = {'movie': 0.025, 'static': 0}[mode]
+        threshold = {'continuous': 0.025, 'static': 0}[mode]
 
         delta_r = abs(r - self.r_target)
         delta_g = abs(g - self.g_target)
@@ -136,8 +136,8 @@ class Fader(Thread):
 
             # Higher frequency for static colors to potentially protect the eye.
             # Lower ones for movies for smoother fading.
-            if mode == 'movie':
-                self.set_freq(self.gpio_freq_movie)
+            if mode == 'continuous':
+                self.set_freq(self.gpio_freq_continuous)
             elif mode == 'static':
                 self.set_freq(self.gpio_freq_static)
 
@@ -209,7 +209,7 @@ class Fader(Thread):
                         # make a visible jump if it is a dark one
                         self.set_freq(self.gpio_freq_static)
                     # the server will take care of setting the
-                    # frequency back to gpio_freq_movie
+                    # frequency back to gpio_freq_continuous
 
                     # self.set_pwm_dutycycle(self.gpio_r, self.r_target)
                     # self.set_pwm_dutycycle(self.gpio_g, self.g_target)

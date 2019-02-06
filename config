@@ -15,9 +15,9 @@ lines=5
 columns=50
 
 # smoothing
-smoothing=3
+smoothing=4
 checks_per_second=2 
-linear_smoothing=1
+linear_smoothing=0
 
 # color temperature
 gamma=1.10,0.88,0.7
