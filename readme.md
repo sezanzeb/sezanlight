@@ -3,7 +3,7 @@
 Reads your **X Window System Linux** screen contents and sends it to a remote raspberry
 that has single-color rgb lights, which are controlled using one PWM gpio pin per R, G and B.
 
-It sparsly checks a few places on the screen (150 pixels by default) and puts extra weight
+It sparsly checks a few places on the screen (250 pixels by default) and puts extra weight
 on those with high saturation.
 
 **worked with:**
