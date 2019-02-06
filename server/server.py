@@ -3,13 +3,15 @@
 """
     this server consists of two threads:
 
-    the main thread:
+    the main thread (server.py):
         listens for get requests and decodes the colors from the get params (stored in url)
         then tells the fader thread object about those parameters.
 
         It also provides the files for the "led controller web app"
 
-    the fader thread object:
+        It doesn't touch the PWM hardware at all
+
+    the fader thread object (fader.py):
         the parameters, parsed by the main thread, are those variables
         that control the fading. The fader is in an infinite loop that just fades from the color
         from the state when a request was made to the color of the request. This way, when multiple
@@ -25,6 +27,8 @@ import logging
 from pathlib import Path
 from fader import Fader
 import configparser
+from shutil import copyfile
+
 
 staticfiles = Path(Path(__file__).parent, 'static').absolute()
 logfile = Path(Path(__file__).parent, 'log')
@@ -36,43 +40,6 @@ logger.addHandler(handler)
 # also enable console output:
 logger.addHandler(logging.StreamHandler())
 
-# 0.0.0.0 works if you send requests from another local machine to the raspberry
-# 'localhost' would only allow requests from within the raspberry
-raspberry_ip = '0.0.0.0'
-
-# for the port I just went with some random unassigned port from this list:
-# https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
-raspberry_port = 3546
-
-# hardware setup (those are the pins used in https://dordnung.de/raspberrypi-ledstrip/)
-gpio_r = 17
-gpio_g = 22
-gpio_b = 24
-
-# read gpio pins and port from config file
-try:
-    config_path = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
-    with open(str(config_path)) as f:
-        config = configparser.RawConfigParser()
-        config.read_string('[root]\n' + f.read())
-        if 'gpio_r' in config['root']: gpio_r = int(config['root']['gpio_r'])
-        if 'gpio_g' in config['root']: gpio_g = int(config['root']['gpio_g'])
-        if 'gpio_b' in config['root']: gpio_b = int(config['root']['gpio_b'])
-        if 'raspberry_port' in config['root']: raspberry_port = int(config['root']['raspberry_port'])
-except FileNotFoundError:
-    logger.warning('config file could not be found! using pins {}, {} and {} and port {}'.format(gpio_r, gpio_g, gpio_b, raspberry_port))
-
-
-# http://abyz.me.uk/rpi/pigpio/python.html#set_PWM_range
-full_on = 20000
-
-# the fading thread
-fader = None
-
-# current client id, used to stop the connection to old
-# connections, when a new client starts sending screen info
-current_client_id = -1
-stop_client_ids = []
 
 # response codes
 OK = 200
@@ -80,25 +47,46 @@ ERROR = 500
 CONFLICT = 409
 NOTFOUND = 404
 BADREQUEST = 400
-
 # color modes
 SCREEN_COLOR = 'movie'
-STATIC = 'static'
+STATIC_COLOR = 'static'
 
 
+# 0.0.0.0 works if you send requests from another local machine to the raspberry
+# 'localhost' would only allow requests from within the raspberry
+raspberry_ip = '0.0.0.0'
+# for the port I just went with some random unassigned port from this list:
+# https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=Unassigned
+raspberry_port = 3546
+
+
+# current client id, used to stop the connection to old
+# connections, when a new client starts sending screen info
+current_client_id = -1
+stop_client_ids = []
+
+
+# load config file for both server.py and fader.py
+config = None
+try:
+    config_path = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
+    with open(str(config_path)) as f:
+        config = configparser.RawConfigParser()
+        config.read_string('[root]\n' + f.read())
+        if 'raspberry_port' in config['root']: raspberry_port = int(config['root']['raspberry_port'])
+except FileNotFoundError:
+    logger.warning('config file could not be found! using port {}'.format(raspberry_port))
+
+
+# the fading thread
 def create_fader_thread():
-    fader = Fader(gpio_r, gpio_g, gpio_b, full_on, logger)
+    fader = Fader(config, logger)
     fader.start()
     return fader
-
 fader = create_fader_thread()
 
 
-def is_screen_color_feed(params):
-    return 'id' in params and 'mode' in params and params['mode'] == SCREEN_COLOR
-
-
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+class SezanlightRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
@@ -120,8 +108,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # if not a file request
         if url.startswith('/color/set/'):
 
-            global fader
-            global stop_client_ids, current_client_id
+            global fader, stop_client_ids, current_client_id
 
             params_split = url.split('?')[1].split('&')
             i = 0
@@ -129,16 +116,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             # default params:
             # keep current color by default if one channel is missing in the request:
-            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1, 'mode': 'static'}
+            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1, 'mode': STATIC_COLOR, 'id': '{}:{}'.format(*self.client_address)}
 
             try:
                 while i < len(params_split):
                     key, value = params_split[i].split('=')
-                    # interpret as integer, failsafe way
                     # except for those parameter that are supposed to be strings:
                     if key in ['mode']:
+                        # read those params as strings
                         params[key] = value
                     else:
+                        # interpret as integer, make sure not to break when there is a dot value
                         params[key] = int(float(value))
                     i += 1
             except:
@@ -152,7 +140,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # 2. don't reject new connections because when an old connection is
             # dead some timeout would have to be checked and stuff. Might be even more
             # complex than what I'm doing at the moment.
-            if params['mode'] == 'movie':
+            if params['mode'] == SCREEN_COLOR:
 
                 # if id in stoplist, then stop and reject
                 if params['id'] in stop_client_ids:
@@ -208,10 +196,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             # just send what the current color is
-            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(int(fader.r * 255 / full_on),
-                                                                     int(fader.g * 255 / full_on),
-                                                                     int(fader.b * 255 / full_on)),
-                                                                     'utf-8'))
+            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(*fader.get_color()), 'utf-8'))
 
         elif url[url.rfind('.'):] in allowed_types:
 
@@ -256,7 +241,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
-httpd = HTTPServer((raspberry_ip, raspberry_port), SimpleHTTPRequestHandler)
+httpd = HTTPServer((raspberry_ip, raspberry_port), SezanlightRequestHandler)
 httpd.serve_forever()
 
 
