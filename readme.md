@@ -46,7 +46,7 @@ see what this xshmgetimage stuff is and if it is faster if it does something sim
 
 ## Problems
 
-**If you don't want to use the two hardware controlled gpio channels (as currently done in server/server.py):**
+**If you don't want to use the two hardware controlled gpio channels (as currently done in server/fader.py):**
 
 Dark colors are difficult if you have a lot of LEDs. They enable you to make bright static
 colors but on movies too bright LEDs are undesired. So the gamma and/or brightness needs to
