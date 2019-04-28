@@ -8,7 +8,7 @@ on those with high saturation.
 
 **worked with:**
 - manjaro xfce
-- xubuntu
+- xubuntu 19.04
 
 **somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
