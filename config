@@ -1,9 +1,6 @@
 # sezanlight configuration file
 
 raspberry_port=3546
-gpio_r=17
-gpio_g=22
-gpio_b=24
 raspberry_ip=
 max_timeout=10
 verbose_level=1
