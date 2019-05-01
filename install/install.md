@@ -1,12 +1,19 @@
 
 # usage/installation
 
-If this guide for some reason does not seem to be clear to you, if you are stuck or if something doesn't work,
-don't hesitate to submit an issue on github.
+If this guide for some reason does not seem to be clear to you, if you are stuck or if
+something doesn't work, don't hesitate to submit an issue on this github page.
 
 ## 1. Set Up your LEDs
 
-My RGB-strip setup is this one: https://dordnung.de/raspberrypi-ledstrip/
+My RGB-strip setup is this one: https://dordnung.de/raspberrypi-ledstrip/, except that
+I'm using the pins 17, 13 and 12.
+
+13 and 12 are hardware controlled gpios for much higher resolutions and hence smother
+color fades.
+
+At the moment there is no config file for that, you need to open server/fader.py
+and edit the config dictionary at the top of the file.
 
 ## 2. Server
 
