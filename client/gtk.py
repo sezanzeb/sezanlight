@@ -5,6 +5,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+import multiprocessing
 import subprocess
 import sys
 import os
@@ -12,6 +13,12 @@ from pathlib import Path
 import requests
 import configparser
 from shutil import copyfile
+
+from importlib.util import spec_from_loader, module_from_spec
+from importlib.machinery import SourceFileLoader 
+spec = spec_from_loader("client", SourceFileLoader("client", "/usr/bin/sezanlight_screen_client"))
+client = module_from_spec(spec)
+spec.loader.exec_module(client)
 
 # GTK:
 # https://python-gtk-3-tutorial.readthedocs.io/en/latest/introduction.html
@@ -94,7 +101,6 @@ class LEDClient(Gtk.Window):
         # self.config = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
         # self.client = Path(Path(__file__).resolve().parent, Path('client.o'))
         self.config = str(Path.home()) + '/.config/sezanlight/config'
-        self.client = 'sezanlight_screen_client' # binary in /usr/bin
 
         # check if config file exists
         if not Path(self.config).exists():
@@ -206,14 +212,15 @@ class LEDClient(Gtk.Window):
             if not self.check_config():
                 self.switch.set_active(0)
                 return
-            self.client_process = subprocess.Popen([str(self.client), str(self.config)])
+            self.client_process = multiprocessing.Process(target=client.main, args=[[None, str(self.config)]])
+            self.client_process.start()
         else:
             self.stop_client()
 
 
     def stop_client(self):
-        if not self.client_process is None and self.client_process.poll() is None:
-            self.client_process.kill()
+        if not self.client_process is None and self.client_process.is_alive():
+            self.client_process.terminate()
 
 
     def close(self, window):
