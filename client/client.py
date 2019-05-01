@@ -5,6 +5,7 @@ import PIL.ImageStat
 import Xlib.display # python-xlib
 
 import requests
+import urllib3
 import time
 
 import sys
@@ -52,14 +53,21 @@ def sendcolor(r, g, b, ip, port, checks_per_second,
     
     logger.info("sending GET pramas: {}".format(url))
 
-    r = requests.get(url)
+    try:
+        r = requests.get(url, timeout=max_timeout)
+    except requests.exceptions.ConnectionError:
+        quit(4)
+    except requests.exceptions.ReadTimeout:
+        quit(5)
     http_code = r.status_code
 
     if http_code == CONFLICT:
         logger.info("server closed connection with this client to prevent duplicate "
                 "connections. Another client started sending to the server!")
-        quit(1)
+        quit(2)
 
+    # EDIT: Is a timeout like that even possible now that requests is used instead of curl?
+    # Or will it rather fail with a requests.exceptions.ReadTimeout above?
     # check if server is available if for 5 seconds no color reached it
     if http_code != OK:
         # how much time passed since the last successful communication?
@@ -67,7 +75,7 @@ def sendcolor(r, g, b, ip, port, checks_per_second,
 
         if timeout >= max_timeout:
             logger.info("timeout! cannot reach server!")
-            quit(1)
+            quit(3)
         else:
             logger.info("server did not send a response for {}s".format(timeout))
     else:

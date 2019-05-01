@@ -95,7 +95,7 @@ class LEDClient(Gtk.Window):
         grid.attach(switch_label,  0, 5, 1, 1)
         grid.attach(switch,        1, 5, 1, 1)
 
-        self.client_process = None
+        self.client = None
 
         # find files
         # self.config = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
@@ -121,7 +121,28 @@ class LEDClient(Gtk.Window):
             copyfile(systemconfig, self.config)
 
 
-    def alert(self, msg1, msg2):
+    def run(self):
+        while True:
+            while Gtk.events_pending():
+                Gtk.main_iteration()
+            if self.client and not self.client.is_alive():
+                if self.client.exitcode == 2:
+                    self.alert('Duplicate Connection', 'A new connection from another computer to LED server broke this one!')
+                elif self.client.exitcode == 3:
+                    self.alert('Timeout', 'Try to restart the server process!')
+                elif self.client.exitcode == 4:
+                    self.alert('Cannot Reach Server', 'Please check if you can ping it. If no, please try to fix that. And then ' +
+                        'check if the server process is running')
+                elif self.client.exitcode == 5:
+                    self.alert('Timeout', 'Try to restart the server process!')
+                elif self.client.exitcode > 0:
+                    self.alert('Unknown Error', 'The process that reads the screen color and sends messages to the PI crashed. ' +
+                        'Please run sezanlight in a console and check the output to debug.')
+                self.client = None
+                self.switch.set_active(0)
+
+
+    def alert(self, msg1, msg2=""):
         dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.OK, text=msg1)
         dialog.format_secondary_text(msg2)
@@ -212,15 +233,16 @@ class LEDClient(Gtk.Window):
             if not self.check_config():
                 self.switch.set_active(0)
                 return
-            self.client_process = multiprocessing.Process(target=client.main, args=[[None, str(self.config)]])
-            self.client_process.start()
+            # it needs to be a process so that I can terminate it
+            self.client = multiprocessing.Process(target=client.main, args=[[None, str(self.config)]])
+            self.client.start()
         else:
             self.stop_client()
 
 
     def stop_client(self):
-        if not self.client_process is None and self.client_process.is_alive():
-            self.client_process.terminate()
+        if not self.client is None and self.client.is_alive():
+            self.client.terminate()
 
 
     def close(self, window):
@@ -231,4 +253,4 @@ class LEDClient(Gtk.Window):
 win = LEDClient()
 win.connect('destroy', win.close)
 win.show_all()
-Gtk.main()
+win.run()
