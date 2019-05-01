@@ -8,6 +8,10 @@ import requests
 import time
 
 import sys
+import logging
+
+logger = logging.getLogger()
+logger.addHandler(logging.StreamHandler())
 
 # many thanks to:
 # https://stackoverflow.com/questions/53688777/how-to-implement-x11return-colour-of-a-screen-pixel-c-code-for-luajits-ffi
@@ -30,14 +34,8 @@ CONFLICT = 409
 timeout = 0
 
 
-def get_us():
-    """ this function returns the microseconds since 1970 """
-    return time.time() * 1000 * 1000
-
-
 def sendcolor(r, g, b, ip, port, checks_per_second,
-              client_id, mode, max_timeout, last_message_timestamp,
-              verbose_level):
+              client_id, mode, max_timeout, last_message_timestamp):
     """sends a get request to the LED server using curl
     - r, g and b are the colors between 0 and full_on
     - ip and port those of the raspberry
@@ -46,35 +44,34 @@ def sendcolor(r, g, b, ip, port, checks_per_second,
     - mode should be SCREEN_COLOR
     - max_timeout is read from the config file. it's an integer of seconds. The code will stop when
     no communication is received within that amount of time.
-    - last_message_timestamp is a pointer to a get_us() value of the last successful communciation"""
+    - last_message_timestamp is a pointer to a time.time() value of the last successful communciation"""
             
     url = "http://{}:{}/color/set/?r={}&g={}&b={}&cps={}&id={}&mode={}".format(
         ip, port, int(r), int(g), int(b), checks_per_second, client_id, mode)
 
-    if verbose_level >= 1:
-        print("sending GET pramas: ", url, "\n")
+    
+    logger.info("sending GET pramas: {}".format(url))
 
-    print("sending GET pramas:", url)
     r = requests.get(url)
     http_code = r.status_code
 
     if http_code == CONFLICT:
-        print("server closed connection with this client to prevent duplicate "
+        logger.info("server closed connection with this client to prevent duplicate "
                 "connections. Another client started sending to the server!")
         quit(1)
 
     # check if server is available if for 5 seconds no color reached it
     if http_code != OK:
         # how much time passed since the last successful communication?
-        timeout = (float)(get_us() - last_message_timestamp) / 1000000
+        timeout = (float)(time.time() - last_message_timestamp) / 1000000
 
         if timeout >= max_timeout:
-            print("timeout! cannot reach server!")
+            logger.info("timeout! cannot reach server!")
             quit(1)
         else:
-            print("server did not send a response for ", timeout, "s")
+            logger.info("server did not send a response for {}s".format(timeout))
     else:
-        last_message_timestamp = get_us()
+        last_message_timestamp = time.time()
 
 
 class Color:
@@ -170,15 +167,20 @@ def main(argv):
                     elif key == "max_timeout": max_timeout = int(strvalue)
                     elif key == "verbose_level": verbose_level = int(strvalue)
                 except:
-                    print("could not parse \"", key, "\" with value \"", strvalue, "\"")
+                    logger.warn("could not parse \"{}\" with value \"{}\"".format(key, strvalue))
 
     if not config_exists:
-        print("error: config file could not be found. You need to specify the path to it as command line argument")
+        logger.error("error: config file could not be found. You need to specify the path to it as command line argument")
         return 1
 
     if raspberry_ip == "":
-        print("error: you need to set the raspberries ip in the config file like this (example): \"raspberry_ip=192.168.1.100\"")
+        logger.error("error: you need to set the raspberries ip in the config file like this (example): \"raspberry_ip=192.168.1.100\"")
         return 1
+
+    if verbose_level == 1:
+        logger.setLevel(logging.INFO)
+    elif verbose_level == 2:
+        logger.setLevel(logging.DEBUG)
 
     client_id = int((time.time() * 10000000)%100000)
 
@@ -228,27 +230,20 @@ def main(argv):
     # assume a working condition in the beginning,
     # this is passed to sendcolor as a pointer and overwritten there
     # on successful communications
-    last_message_timestamp = get_us()
+    last_message_timestamp = time.time()
 
     # loop forever, reading the screen
     while True:
+        start = time.time()
 
-        start = get_us()
-
-        # work on floats in order to prevent rounding errors that add up
-        r = 1
-        g = 1
-        b = 1
+        # work on floats in order to prevent rounding errors that add up,
+        # so never parse them to ints
+        r = [0] * lines * columns
+        g = [0] * lines * columns
+        b = [0] * lines * columns
 
         # count three lines on the screen or something
         for i in range(1, lines + 1):
-            # to prevent overflows, aggregate color for each line individually
-            # EDIT: that was needed when those variables were ints a time ago
-            r_line = 0
-            g_line = 0
-            b_line = 0
-            normalizer = 0
-            
             # ZPixmap fixes xorg color reading on cinnamon a little bit (as opposed to XYPixmap)
             # some info on XGetImage + XGetPixel speed:
             # asking for the complete screen: very slow
@@ -260,11 +255,8 @@ def main(argv):
             image_rgb = PIL.Image.frombytes("RGB", (screen_width, 1), image.data, "raw", "BGRX")
             
             # e.g. is columns is 3, it will check the center pixel, and the centers between the center pixel and the two borders
-            x = (screen_width % columns) // 2
-            while True:
-                x += screen_width // columns
-                if x >= screen_width:
-                    break
+            for j in range(0, columns):
+                x = int((screen_width % columns) / 2 + (screen_width / columns) * j)
                     
                 c = Color(image_rgb.im[x])
                 c_r = full_on * c.red / 256
@@ -275,21 +267,15 @@ def main(argv):
                 # difference between lowest and highest value should do the trick already
                 diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)))
                 weight = diff * 20 / full_on + 1 # between 1 and 21
-                normalizer += weight
-                r_line += c_r * weight
-                g_line += c_g * weight
-                b_line += c_b * weight
-
-            r += r_line / normalizer
-            g += g_line / normalizer
-            b += b_line / normalizer
+                r[j] = c_r * weight
+                g[j] = c_g * weight
+                b[j] = c_b * weight
 
         # r g and b are now between 0 and full_on
-        r = r / lines
-        g = g / lines
-        b = b / lines
-        if verbose_level >= 2:
-            print("observed color : ", r, " ", g, " ", b)
+        r = sum(r) / len(r)
+        g = sum(g) / len(g)
+        b = sum(b) / len(b)
+        logger.debug("observed color : {} {} {}".format(r, g, b))
 
         # only do stuff if the color changed.
         # the server only fades when the new color exceeds a threshold of 2.5% of full_on
@@ -320,8 +306,7 @@ def main(argv):
                     g = (g_old * smoothing + g) / (smoothing + 1)
                     b = (b_old * smoothing + b) / (smoothing + 1)
 
-                if verbose_level >= 2:
-                    print("smoothed color : ", r, " ", g, " ", b)
+                logger.debug("smoothed color : {} {} {}".format(r, g, b))
 
             # make sure to do this directly after the smoothing
             # 1. to not break non-linear smoothing
@@ -346,8 +331,7 @@ def main(argv):
                 r = r * old_max / new_max
                 g = g * old_max / new_max
                 b = b * old_max / new_max
-                if verbose_level >= 2:
-                    print("saturated color: ", r, " ", g, " ", b)
+                logger.debug("saturated color: {} {} {}".format(r, g, b))
 
             if normalize > 0:
                 # normalize it so that the lightest value is e.g. full_on
@@ -363,8 +347,7 @@ def main(argv):
                     r = r * (1 - normalize) + r * new_max / old_max * normalize
                     g = g * (1 - normalize) + g * new_max / old_max * normalize
                     b = b * (1 - normalize) + b * new_max / old_max * normalize
-                if verbose_level >= 2:
-                    print("normalized color: ", r, " ", g, " ", b)
+                logger.debug("normalized color: {} {} {}".format(r, g, b))
 
             # correct led color temperature
             # 1. gamma
@@ -382,8 +365,7 @@ def main(argv):
             r = min(full_on, max(0.0, r))
             g = min(full_on, max(0.0, g))
             b = min(full_on, max(0.0, b))
-            if verbose_level >= 2:
-                print("temperature fix: ", r, " ", g, " ", b)
+            logger.debug("temperature fix: {} {} {}".format(r, g, b))
 
 
             # for VERY dark colors, make it more gray to prevent supersaturated colors like (0, 1, 0).
@@ -398,31 +380,27 @@ def main(argv):
                 r = (greyscaling) * r + (1 - greyscaling) * mean
                 g = (greyscaling) * g + (1 - greyscaling) * mean
                 b = (greyscaling) * b + (1 - greyscaling) * mean
-                if verbose_level >= 2:
-                    print("dark color fix : ", r, " ", g, " ", b)
+                logger.debug("dark color fix : {} {} {}".format(r, g, b))
 
             # send to the server for the illumination of the LEDs
-            sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second, client_id, SCREEN_COLOR, max_timeout, last_message_timestamp, verbose_level)
+            sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second, client_id, SCREEN_COLOR, max_timeout, last_message_timestamp)
         else:
-            if verbose_level >= 1:
-                print("color did not change or is too identical; skipping")
+            logger.info("color did not change or is too identical; skipping")
 
         # 1000000 is one second
         # the frequency of checks can require quite a lot of cpu usage,
         # don't only look for the server executable in your cpu usage,
         # also look for /usr/lib/Xorg cpu usage
-        delta = get_us() - start
-        if verbose_level >= 1:
-            print("calculating and sending: ", delta, "us")
-        if verbose_level >= 2:
-            print("\n")
+        delta = time.time() - start
+        logger.info("calculating and sending: {}ms\n".format(round(delta * 1000, 3)))
         # try to check the screen colors once every second (or whatever the checks_per_second param is)
         # so substract the delta or there might be too much waiting time between each check
-        time.sleep(max(0, 1 / checks_per_second - delta / 1000000))
+        time.sleep(max(0, 1 / checks_per_second - delta))
 
         # increment i, used for creating the window of colors for smoothing
         i += 1
 
     return 0
 
-main(sys.argv)
+if __name__ == '__main__':
+    main(sys.argv)
