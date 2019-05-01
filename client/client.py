@@ -32,19 +32,19 @@ CONFLICT = 409
 
 # for how was no answer received from the server?
 timeout = 0
-
+last_message_timestamp = 0
 
 def sendcolor(r, g, b, ip, port, checks_per_second,
-              client_id, mode, max_timeout, last_message_timestamp):
+              client_id, max_timeout, mode=SCREEN_COLOR):
     """sends a get request to the LED server using curl
-    - r, g and b are the colors between 0 and full_on
+    - r, g and b are the colors between 0 and full_on. can be floats
     - ip and port those of the raspberry
     - check_per_second is how often this client will (try to) make such reqeusts per seoncds
     - client_id is an identifier for the current "stream" of messages from this client
     - mode should be SCREEN_COLOR
     - max_timeout is read from the config file. it's an integer of seconds. The code will stop when
-    no communication is received within that amount of time.
-    - last_message_timestamp is a pointer to a time.time() value of the last successful communciation"""
+    no communication is received within that amount of time."""
+    global last_message_timestamp
             
     url = "http://{}:{}/color/set/?r={}&g={}&b={}&cps={}&id={}&mode={}".format(
         ip, port, int(r), int(g), int(b), checks_per_second, client_id, mode)
@@ -63,7 +63,7 @@ def sendcolor(r, g, b, ip, port, checks_per_second,
     # check if server is available if for 5 seconds no color reached it
     if http_code != OK:
         # how much time passed since the last successful communication?
-        timeout = (float)(time.time() - last_message_timestamp) / 1000000
+        timeout = time.time() - last_message_timestamp
 
         if timeout >= max_timeout:
             logger.info("timeout! cannot reach server!")
@@ -90,6 +90,7 @@ def parse_float_array(strvalue, array):
 
 
 def main(argv):
+    global last_message_timestamp
     # default params:
 
     # screen
@@ -383,7 +384,7 @@ def main(argv):
                 logger.debug("dark color fix : {} {} {}".format(r, g, b))
 
             # send to the server for the illumination of the LEDs
-            sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second, client_id, SCREEN_COLOR, max_timeout, last_message_timestamp)
+            sendcolor(r, g, b, raspberry_ip, raspberry_port, checks_per_second, client_id, max_timeout)
         else:
             logger.info("color did not change or is too identical; skipping")
 
