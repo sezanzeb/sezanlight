@@ -3,7 +3,7 @@
 ## 1. Installation
 
 ```Bash
-sudo apt install git g++ make libx11-dev libcurl4-openssl-dev libboost-dev
+sudo apt install git python3-xlib
 git clone https://github.com/sezanzeb/sezanlight.git
 cd sezanlight
 chmod +x client/client.py
