@@ -116,7 +116,8 @@ class SezanlightRequestHandler(BaseHTTPRequestHandler):
 
             # default params:
             # keep current color by default if one channel is missing in the request:
-            params = {'r': fader.r, 'g': fader.g, 'b': fader.b, 'cps': 1, 'mode': STATIC_COLOR, 'id': '{}:{}'.format(*self.client_address)}
+            r, g, b = fader.get_color()
+            params = {'r': r, 'g': g, 'b': b, 'cps': 1, 'mode': STATIC_COLOR, 'id': '{}:{}'.format(*self.client_address)}
 
             try:
                 while i < len(params_split):
@@ -184,7 +185,7 @@ class SezanlightRequestHandler(BaseHTTPRequestHandler):
                 fader = create_fader_thread()
                 
             # now tell the fader what to do
-            fader.set_target(params['r'], params['g'], params['b'], params['cps'], params['mode'])
+            fader.set_target([params['r'], params['g'], params['b']], params['cps'], params['mode'])
 
             # send ok
             self.send_response(OK)
