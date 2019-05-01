@@ -5,11 +5,9 @@
 ```Bash
 sudo apt install git g++ make libx11-dev libcurl4-openssl-dev libboost-dev
 git clone https://github.com/sezanzeb/sezanlight.git
-cd sezanlight/client
-make
-cd ../
+cd sezanlight
 sudo install -D client/gtk.py /usr/bin/sezanlight
-sudo install -D client/client.o /usr/bin/sezanlight_screen_client
+sudo install -D client/client.py /usr/bin/sezanlight_screen_client
 install -D --owner=$USER config $HOME/.config/sezanlight/config
 sudo install -D install/sezanlight.desktop /usr/share/applications/sezanlight.desktop
 cd ../

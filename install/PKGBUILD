@@ -14,22 +14,22 @@ pkgdesc="Illuminates LEDs connected to gpios of a Raspberry on which the server 
 arch=("x86_64")
 url="https://github.com/sezanzeb/sezanlight"
 license=("unlicense")
-depends=("curl" "boost" "libx11")
-makedepends=("git" "gcc")
+depends=("python-xlib")
+makedepends=("git")
 provides=("sezanlight")
 source=("sezanlight::git+https://github.com/sezanzeb/sezanlight.git")
 sha256sums=("SKIP")
 
 build() {
 	cd sezanlight/client/
-	make
     chmod +x gtk.py
+    chmod +x client.py
 }
 
 package() {
 	cd sezanlight/
     install -D client/gtk.py "${pkgdir}"/usr/bin/sezanlight
-    install -D client/client.o "${pkgdir}"/usr/bin/sezanlight_screen_client
+    install -D client/client.py "${pkgdir}"/usr/bin/sezanlight_screen_client
 
     # going to be copied over to users home dir on program start
     # /$HOME/.config/sezanlight/config, because pacman should not modify /home apparently
