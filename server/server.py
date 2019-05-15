@@ -197,7 +197,7 @@ class SezanlightRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             # just send what the current color is
-            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(*fader.get_color()), 'utf-8'))
+            self.wfile.write(bytes('{{"r":{},"g":{},"b":{}}}'.format(*[round(x) for x in fader.get_color()]), 'utf-8'))
 
         elif url[url.rfind('.'):] in allowed_types:
 

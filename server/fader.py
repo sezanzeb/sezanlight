@@ -252,8 +252,7 @@ class Fader(Thread):
                         # Overwrite globals r, g and b so that when fading restarts,
                         # that is going to be the new starting color.
                         self.current_color = [
-                            max(1, self.start_color[c] * (1 - self.fade_state) +
-                                self.target_color[c] * self.fade_state)
+                            self.start_color[c] * (1 - self.fade_state) + self.target_color[c] * self.fade_state
                             for c in range(3)
                         ]
                         # print(self.fade_state, self.r_target, self.g_target, self.b_target)
