@@ -12,7 +12,10 @@ import sys
 import logging
 
 logger = logging.getLogger()
-logger.addHandler(logging.StreamHandler())
+handler = logging.StreamHandler()
+# logger level will be set in main based on configs verbose value
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 # many thanks to:
 # https://stackoverflow.com/questions/53688777/how-to-implement-x11return-colour-of-a-screen-pixel-c-code-for-luajits-ffi
@@ -245,20 +248,20 @@ def main(argv):
     while True:
         start = time.time()
 
-        # work on floats in order to prevent rounding errors that add up,
-        # so never parse them to ints
+        # work in arrays to prevent overflowing ints
         r = [0] * lines * columns
         g = [0] * lines * columns
         b = [0] * lines * columns
+        weights = [0] * lines * columns
 
         # count three lines on the screen or something
-        for i in range(1, lines + 1):
+        for i in range(0, lines):
             # ZPixmap fixes xorg color reading on cinnamon a little bit (as opposed to XYPixmap)
             # some info on XGetImage + XGetPixel speed:
             # asking for the complete screen: very slow
             # asking for lines: relatively fast
             # asking for individual pixels: slow
-            y = int(screen_height / (lines + 1) * i)
+            y = int(screen_height / (lines + 1) * (i + 1))
             # image = XGetImage(d, root, 0, y, screen_width, 1, AllPlanes, ZPixmap)
             image = root.get_image(0, y, screen_width, 1, Xlib.X.ZPixmap, 0xffffffff)
             image_rgb = PIL.Image.frombytes("RGB", (screen_width, 1), image.data, "raw", "BGRX")
@@ -275,16 +278,20 @@ def main(argv):
                 # over grey colors
                 # difference between lowest and highest value should do the trick already
                 diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)))
-                weight = diff * 20 / full_on + 1 # between 1 and 21
-                r[j] = c_r * weight
-                g[j] = c_g * weight
-                b[j] = c_b * weight
+                weight = diff / full_on * 5 + 1
+                r[i * columns + j] = c_r * weight
+                g[i * columns + j] = c_g * weight
+                b[i * columns + j] = c_b * weight
+                weights[i * columns + j] = weight
 
-        # r g and b are now between 0 and full_on
-        r = sum(r) / len(r)
-        g = sum(g) / len(g)
-        b = sum(b) / len(b)
+        # average color per pixel, also divide by avg weight so that it's
+        # within the bounds of the color space of the calculation (full_on)
+        weight = sum(weights) / len(weights)
+        r = sum(r) / len(r) / weight
+        g = sum(g) / len(g) / weight
+        b = sum(b) / len(b) / weight
         logger.debug("observed color : {} {} {}".format(r, g, b))
+        # r g and b are now between 0 and full_on
 
         # only do stuff if the color changed.
         # the server only fades when the new color exceeds a threshold of 2.5% of full_on
@@ -350,12 +357,10 @@ def main(argv):
                     old_max = r + g + b
                 else:
                     old_max = max(max(r, g), b)
-                old_max = max(0.0, old_max)
-                if old_max >= 0:
-                    new_max = full_on
-                    r = r * (1 - normalize) + r * new_max / old_max * normalize
-                    g = g * (1 - normalize) + g * new_max / old_max * normalize
-                    b = b * (1 - normalize) + b * new_max / old_max * normalize
+                new_max = full_on
+                r = r * (1 - normalize) + r * new_max * normalize / old_max
+                g = g * (1 - normalize) + g * new_max * normalize / old_max
+                b = b * (1 - normalize) + b * new_max * normalize / old_max
                 logger.debug("normalized color: {} {} {}".format(r, g, b))
 
             # correct led color temperature
@@ -374,7 +379,7 @@ def main(argv):
             r = min(full_on, max(0.0, r))
             g = min(full_on, max(0.0, g))
             b = min(full_on, max(0.0, b))
-            logger.debug("temperature fix: {} {} {}".format(r, g, b))
+            logger.debug("gamma/bright fix: {} {} {}".format(r, g, b))
 
 
             # for VERY dark colors, make it more gray to prevent supersaturated colors like (0, 1, 0).
