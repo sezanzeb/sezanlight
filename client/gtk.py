@@ -13,6 +13,10 @@ from pathlib import Path
 import requests
 import configparser
 from shutil import copyfile
+import time
+
+import logging
+logging.getLogger().setLevel(logging.DEBUG)
 
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader 
@@ -128,18 +132,15 @@ class LEDClient(Gtk.Window):
             if self.client and not self.client.is_alive():
                 if self.client.exitcode == 2:
                     self.alert('Duplicate Connection', 'A new connection from another computer to LED server broke this one!')
-                elif self.client.exitcode == 3:
-                    self.alert('Timeout', 'Try to restart the server process!')
-                elif self.client.exitcode == 4:
+                elif self.client.exitcode in [4, 3, 5]:
                     self.alert('Cannot Reach Server', 'Please check if you can ping it. If no, please try to fix that. And then ' +
-                        'check if the server process is running')
-                elif self.client.exitcode == 5:
-                    self.alert('Timeout', 'Try to restart the server process!')
+                        'check if the server process is running on your raspberry')
                 elif self.client.exitcode > 0:
                     self.alert('Unknown Error', 'The process that reads the screen color and sends messages to the PI crashed. ' +
                         'Please run sezanlight in a console and check the output to debug.')
                 self.client = None
                 self.switch.set_active(0)
+            time.sleep(1/60)
 
 
     def alert(self, msg1, msg2=""):
