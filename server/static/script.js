@@ -12,8 +12,6 @@ function status_listener(req) {
         if (req.readyState != 4)
             return
         let status = req.responseText
-        console.log(req.responseText)
-        console.log(req.response)
         // no response and not 200, print code
         if (req.status != 200 && status == '') {
             status = req.status

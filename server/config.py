@@ -36,9 +36,15 @@ def load_config():
     """reads the config file and returns the
     configparser instance"""
 
-    config_path = Path(Path(__file__).resolve().parent,
-                    Path('config')).resolve()
-    global config
+    global config, config_path
+
+    try:
+        config_path = Path(Path(__file__).resolve().parent, Path('config')).resolve()
+    except FileNotFoundError:
+        # create empty config
+        with open(str(config_path), 'w+') as f:
+            pass
+
     with open(str(config_path), 'r') as f:
         config = configparser.RawConfigParser()
         config.read_string('[root]\n' + f.read())
