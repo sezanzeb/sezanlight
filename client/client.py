@@ -50,7 +50,7 @@ def sendcolor(r, g, b, ip, port, checks_per_second,
     no communication is received within that amount of time."""
     global last_message_timestamp
             
-    url = "http://{}:{}/color/set/?r={}&g={}&b={}&cps={}&id={}&mode={}".format(
+    url = "http://{}:{}/color/set?r={}&g={}&b={}&cps={}&id={}&mode={}".format(
         ip, port, int(r), int(g), int(b), checks_per_second, client_id, mode)
 
     
