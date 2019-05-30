@@ -123,6 +123,8 @@ class Fader(Thread):
         logger.info(
             '- b: {}'.format(pi.get_PWM_real_range(config['b']['pin'])))
 
+        self.run_fader = True
+
         # complete thread creation
         Thread.__init__(self)
 
@@ -232,7 +234,7 @@ class Fader(Thread):
             start to target colors
         """
 
-        while True:
+        while self.run_fader:
 
             start = time.time()
             # f will move from 0 to 1

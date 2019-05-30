@@ -2,6 +2,8 @@ from pathlib import Path
 import configparser
 from logger import logger
 
+config_path = 'config'
+config = None
 
 def change_config(**options):
     """takes arbitrary keyword arguments and
@@ -14,25 +16,29 @@ def change_config(**options):
     # write back, but without the mandatory header
     config_string = '\n'.join(['{}={}'.format(k, v)
                                for (k, v) in config['root'].items()])
+    print(config_string)
     with open(str(config_path), 'w') as f:
         f.write(config_string)
         f.write('\n')
 
 
 def get_config(key, default=None):
+    """reads from the config file, if key not available,
+    will return the value of the default kwarg"""
+
     if key in config['root']:
         return config['root'][key]
     else:
         return default
 
 
-# load config file for both server.py and fader.py
-config = None
-config_path = None
-try:
-    config_path = Path(Path(__file__).resolve().parent,
-                       Path('serverconfig')).resolve()
+def load_config():
+    """reads the config file and returns the
+    configparser instance"""
 
+    config_path = Path(Path(__file__).resolve().parent,
+                    Path('config')).resolve()
+    global config
     with open(str(config_path), 'r') as f:
         config = configparser.RawConfigParser()
         config.read_string('[root]\n' + f.read())
@@ -47,6 +53,6 @@ try:
             # 'localhost' would only allow requests from within the raspberry
             change_config(raspberry_ip='0.0.0.0')
 
-except FileNotFoundError:
-    logger.warning(
-        'config file could not be found! using port {}'.format(raspberry_port))
+    return config
+    
+config = load_config()

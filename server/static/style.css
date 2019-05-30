@@ -1,13 +1,26 @@
 body {
     background: #111;
-    color: #fff;
+    color: #eee;
     font-family: sans-serif;
-    text-align: center;
     margin: 50px;
+}
+
+#main {
+    border: 5px solid RGB(128, 128, 128);
+    border-radius: 2px;
+    display: table;
+    margin: 0px auto;
+    width: 300px;
+    transition: border-color ease-out 1.5s;
+    box-sizing: border-box;
 }
 
 label {
     margin-right: 10px;
+}
+
+label + input:not(input[type=checkbox]) {
+    width: 75%;
 }
 
 input, button {
@@ -16,4 +29,139 @@ input, button {
     border: 1px solid black;
     padding: 5px 10px;
     border-radius: 3px;
+}
+
+.center {
+    text-align: center;
+}
+
+button {
+    cursor: pointer;
+}
+
+.tab {
+    display: None;
+    padding: 0px 20px;
+}
+
+.tab > *:first-child {
+    margin-top: 16px;
+}
+
+.tab > *:last-child {
+    margin-bottom: 16px;
+}
+
+.active {
+    display: block;
+}
+
+#status {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+    max-height: 50px;
+    line-height: 30px;
+    height: 32px;
+    font-size: 12px;
+    transition: max-height ease-out 0.5s;
+    overflow: hidden;
+    border-top: 1px solid #333;
+    opacity: 0.5;
+}
+
+#status:empty {
+    max-height: 0px;
+    border: 0px;
+}
+
+#nav {
+    width: 100%;
+    background: #222;
+    text-align: center;
+}
+
+#nav > span {
+    padding: 10px;
+    display: inline-block;
+    cursor: pointer;
+    opacity: 0.3;
+}
+
+#nav > span.active {
+    opacity: 1;
+}
+
+hr {
+    margin: 20px;
+    border: 0px;
+    border-top: 1px solid #222;
+}
+
+.tooltip {
+    pointer-events: none;
+    position: absolute;
+    background: RGBa(0, 0, 0, 0.7);
+    padding: 5px 10px;
+    border-radius: 2px;
+    margin: 5px 0px;
+    border: 1px solid #2f2f2f;
+    /*box-shadow: 0px 1px 5px black;*/
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    display: block;
+    font-size: 13px;
+    line-height: normal;
+    margin-right: 23px;
+    margin-left: 8px;
+    width: 300px;
+}
+
+.tooltip:empty, .tooltipsdisabled .tooltip {
+    display: none;
+}
+
+p:hover > span.tooltip {
+    opacity: 1;
+}
+
+small {
+    opacity: 0.3;
+}
+
+#dangerous {
+    max-height: 0px;
+    overflow: hidden;
+    transition: max-height ease-out 0.5s;
+}
+
+#dangerous_collapse:checked + #dangerous {
+    max-height: 500px;
+}
+
+* {
+    vertical-align: middle;
+}
+
+*:focus {
+    outline: 0px;
+}
+
+#dangerous_collapse {
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 959px) {
+    #main {
+        width: 100%;
+    }
+
+    body {
+        margin: 10px;
+    }
+
+    .tooltip {
+        width: auto;
+    }
 }

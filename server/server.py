@@ -1,5 +1,4 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json
 from logger import logger
 from config import change_config, get_config
 
@@ -26,7 +25,7 @@ class BaseServer(BaseHTTPRequestHandler):
                 if matcher == '*':
                     matcher = lambda: True
                 elif method.lower() == 'get':
-                    matcher = lambda url: url.startswith(key)
+                    matcher = lambda url: url.split('?')[0] == key.split('?')[0]
                 elif method.lower() == 'post':
                     matcher = lambda url: url == key
 
@@ -62,18 +61,19 @@ class SezanlightRequestHandler:
             if matcher == '*':
                 msg = 'any url'
 
+        self.httpserver = None
+
         global handlers
         handlers[method.lower()].append((matcher, handler))
         print('adding {} route for {}'.format(method, msg))
 
     def start(self):
-
         raspberry_ip = get_config('raspberry_ip', '0.0.0.0')
         raspberry_port = int(get_config('raspberry_port', 3546))
 
         logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
-        httpserver = HTTPServer((raspberry_ip, raspberry_port), BaseServer)
-        httpserver.serve_forever()
+        self.httpserver = HTTPServer((raspberry_ip, raspberry_port), BaseServer)
+        self.httpserver.serve_forever()
 
 
 server = SezanlightRequestHandler()

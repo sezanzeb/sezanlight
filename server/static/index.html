@@ -3,21 +3,52 @@
         <title>led controller web app</title>
         <link rel='stylesheet' type='text/css' href='style.css'>
         <meta charset="UTF-8">
+        <meta name="theme-color" content="#111" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <div id='main'>
-            <h1>LED Color</h1>
-            <p>between 0 and 255</p>
-            <form id='form'>
-                <p><label for='r'>r</label><input type='number' value=0 id='r'></p>
-                <p><label for='g'>g</label><input type='number' value=0 id='g'></p>
-                <p><label for='b'>b</label><input type='number' value=0 id='b'></p>
-                <p>
-                    <label for='correctTemp'>fix color temp:</label>
-                    <input type='checkbox' id='correctTemp'>
-                </p>
-                <p><button id='submit'>submit</button></p>
-            </form>
+            <div id='nav'>
+                <span class='active' onclick='show(this, "static")'>LED Color</span>
+                <span onclick='show(this, "config")'>Config</span>
+            </div>
+            <div class='tab active' id='static'>
+                <div class='center'>
+                    <p>between 0 and 255</p>
+                    <form id='form_static'>
+                        <p><label for='r'>r</label><input type='number' value=0 id='r'></p>
+                        <p><label for='g'>g</label><input type='number' value=0 id='g'></p>
+                        <p><label for='b'>b</label><input type='number' value=0 id='b'></p>
+                        <p>
+                            <label for='correctTemp'>fix color temp:</label>
+                            <input type='checkbox' id='correctTemp'>
+                        </p>
+                        <p><button>submit</button></p>
+                    </form>
+                </div>
+            </div>
+            <div class='tab' id='config'>
+                <form id='form_config'>
+                    <label for='dangerous_collapse'>show dangerous settings:</label>
+                    <input type='checkbox' id='dangerous_collapse'>
+                    <div id='dangerous'>
+                        <p class='center'>
+                            <label for='raspberry_port'>port</label>
+                            <input name='raspberry_port' type='number' value='' id='raspberry_port'>
+                        </p>
+                        <p><small>
+                            setting the port to restricted ports
+                            might break your server. Restart after setting this.
+                        </small></p>
+                    </div>
+                    <p class='center'><button>submit</button></p>
+                </form>
+                <hr/>
+                <form id='form_restart' class='center'>
+                    <button>restart server</button>
+                </form>
+            </div>
+            <div id='status'></div>
         </div>
     </body>
     <script src='script.js'></script>
