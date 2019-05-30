@@ -209,7 +209,7 @@ class LEDClient(Gtk.Window):
         config = self.read_config()
         raspberry_ip = config['raspberry_ip']
         raspberry_port = config['raspberry_port']
-        url = 'http://{}:{}/color/set/?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
+        url = 'http://{}:{}/color/set?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
         try:
             # 1s timeout in a local network is more than enough
             requests.get(url, timeout=1)
