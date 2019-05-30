@@ -2,7 +2,7 @@
 
 // this variable is set on all the clients and on the server as well.
 // the range of values the raspberry accepts for each color channel
-let full_on = 20000
+let full_on = 20000 // TODO make server send this setting to the clients
 let r = 0
 let g = 0
 let b = 0

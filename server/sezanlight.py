@@ -246,12 +246,23 @@ def restart(handler):
     # when the server shuts down
 
 
+def send_config(handler):
+    # TODO
+    # sends JSON of the config file to any client
+    # 1. for the frontend config tab
+    # 2. to sync the full_on setting
+    # and also rename full_on to range
+    # and add it to config
+    pass
+
+
 # add all the routes to the server
 server.add_route('POST', '/config', config_endpoint)
 server.add_route('GET', '/color/set', writecolor)
 server.add_route('GET', '/color/get', readcolor)
 server.add_route('GET', staticmatcher, static)
 server.add_route('GET', '/restart', restart)
+server.add_route('GET', '/config', send_config)
 
 # autorestart
 while True:

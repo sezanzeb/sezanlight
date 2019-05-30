@@ -197,7 +197,8 @@ def main(argv):
     client_id = int((time.time() * 10000000)%100000)
 
     # controls the resolution of the color space of the leds
-    # default is 256, this is also configured in server.py
+    # default is 256, this is also configured in server/sezanlight.py
+    # TODO make server send this setting to the clients
     # have this as float, because r, g and b are floats during
     # filtering in order to improve type compatibility stuff.
     full_on = 20000
