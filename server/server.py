@@ -13,18 +13,23 @@ handlers = {
 
 class BaseServer(BaseHTTPRequestHandler):
     def match_and_call(self, method):
-        url = self.path  # /?r=128&g=128&b=128
+        url = self.path.replace('..', '')  # /?r=128&g=128&b=128
         global handlers
         match = False
 
         for key, handler in handlers[method]:
+
+            # matcher might be a string
+            # or a function
             matcher = key
-            if matcher == '*':
-                matcher = lambda: True
-            elif method.lower() == 'get':
-                matcher = lambda url: url.startswith(key)
-            elif method.lower() == 'post':
-                matcher = lambda url: url == key
+            if type(matcher) == str:
+                if matcher == '*':
+                    matcher = lambda: True
+                elif method.lower() == 'get':
+                    matcher = lambda url: url.startswith(key)
+                elif method.lower() == 'post':
+                    matcher = lambda url: url == key
+
             if matcher(url):
                 handler(self)
                 match = True
