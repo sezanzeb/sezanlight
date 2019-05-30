@@ -5,6 +5,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+import multiprocessing
 import subprocess
 import sys
 import os
@@ -12,6 +13,16 @@ from pathlib import Path
 import requests
 import configparser
 from shutil import copyfile
+import time
+
+import logging
+logging.getLogger().setLevel(logging.DEBUG)
+
+from importlib.util import spec_from_loader, module_from_spec
+from importlib.machinery import SourceFileLoader 
+spec = spec_from_loader("client", SourceFileLoader("client", "/usr/bin/sezanlight_screen_client"))
+client = module_from_spec(spec)
+spec.loader.exec_module(client)
 
 # GTK:
 # https://python-gtk-3-tutorial.readthedocs.io/en/latest/introduction.html
@@ -88,13 +99,12 @@ class LEDClient(Gtk.Window):
         grid.attach(switch_label,  0, 5, 1, 1)
         grid.attach(switch,        1, 5, 1, 1)
 
-        self.client_process = None
+        self.client = None
 
         # find files
         # self.config = Path(Path(__file__).resolve().parent, Path('../config')).resolve()
         # self.client = Path(Path(__file__).resolve().parent, Path('client.o'))
         self.config = str(Path.home()) + '/.config/sezanlight/config'
-        self.client = 'sezanlight_screen_client' # binary in /usr/bin
 
         # check if config file exists
         if not Path(self.config).exists():
@@ -115,7 +125,25 @@ class LEDClient(Gtk.Window):
             copyfile(systemconfig, self.config)
 
 
-    def alert(self, msg1, msg2):
+    def run(self):
+        while True:
+            while Gtk.events_pending():
+                Gtk.main_iteration()
+            if self.client and not self.client.is_alive():
+                if self.client.exitcode == 2:
+                    self.alert('Duplicate Connection', 'A new connection from another computer to LED server broke this one!')
+                elif self.client.exitcode in [4, 3, 5]:
+                    self.alert('Cannot Reach Server', 'Please check if you can ping it. If no, please try to fix that. And then ' +
+                        'check if the server process is running on your raspberry')
+                elif self.client.exitcode > 0:
+                    self.alert('Unknown Error', 'The process that reads the screen color and sends messages to the PI crashed. ' +
+                        'Please run sezanlight in a console and check the output to debug.')
+                self.client = None
+                self.switch.set_active(0)
+            time.sleep(1/60)
+
+
+    def alert(self, msg1, msg2=""):
         dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.OK, text=msg1)
         dialog.format_secondary_text(msg2)
@@ -206,14 +234,16 @@ class LEDClient(Gtk.Window):
             if not self.check_config():
                 self.switch.set_active(0)
                 return
-            self.client_process = subprocess.Popen([str(self.client), str(self.config)])
+            # it needs to be a process so that I can terminate it
+            self.client = multiprocessing.Process(target=client.main, args=[[None, str(self.config)]])
+            self.client.start()
         else:
             self.stop_client()
 
 
     def stop_client(self):
-        if not self.client_process is None and self.client_process.poll() is None:
-            self.client_process.kill()
+        if not self.client is None and self.client.is_alive():
+            self.client.terminate()
 
 
     def close(self, window):
@@ -224,4 +254,4 @@ class LEDClient(Gtk.Window):
 win = LEDClient()
 win.connect('destroy', win.close)
 win.show_all()
-Gtk.main()
+win.run()

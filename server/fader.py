@@ -116,9 +116,12 @@ class Fader(Thread):
         self.set_pwm_dutycycle([0, 0, 0])
 
         logger.info('resolutions of channels in continuous mode:')
-        logger.info('- r: {}'.format(pi.get_PWM_real_range(config['r']['pin'])))
-        logger.info('- g: {}'.format(pi.get_PWM_real_range(config['g']['pin'])))
-        logger.info('- b: {}'.format(pi.get_PWM_real_range(config['b']['pin'])))
+        logger.info(
+            '- r: {}'.format(pi.get_PWM_real_range(config['r']['pin'])))
+        logger.info(
+            '- g: {}'.format(pi.get_PWM_real_range(config['g']['pin'])))
+        logger.info(
+            '- b: {}'.format(pi.get_PWM_real_range(config['b']['pin'])))
 
         # complete thread creation
         Thread.__init__(self)

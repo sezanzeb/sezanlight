@@ -40,6 +40,8 @@ on your client (the X11 device you use to watch videos, etc.):
 
 for **arch/manjaro**, a PKGBUILD file for pacman is available:
 
+**NOTE, this is not tested since I switched from arch to ubuntu again and ported the client from c++ to python**
+
 ```
 mkdir sezanlight_tmp
 cd sezanlight_tmp
