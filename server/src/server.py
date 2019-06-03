@@ -67,13 +67,12 @@ class SezanlightRequestHandler:
         handlers[method.lower()].append((matcher, handler))
         print('adding {} route for {}'.format(method, msg))
 
-    def start(self):
+    def start(self):        
         raspberry_ip = get_config('raspberry_ip', '0.0.0.0')
         raspberry_port = int(get_config('raspberry_port', 3546))
 
         logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
         self.httpserver = HTTPServer((raspberry_ip, raspberry_port), BaseServer)
         self.httpserver.serve_forever()
-
 
 server = SezanlightRequestHandler()

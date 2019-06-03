@@ -1,10 +1,13 @@
 <html>
     <head>
-        <title>led controller web app</title>
-        <link rel='stylesheet' type='text/css' href='style.css'>
+        <title>Sezanlight</title>
+        <meta name="description" content="Control your Sezanlight LED server from your phone">
+        <meta name="application-name" content="Sezanlight">
+
         <meta charset="UTF-8">
-        <meta name="theme-color" content="#111" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="icon" href="icons/mipmap-xxxhdpi/ic_launcher.png">
+        <link rel='stylesheet' type='text/css' href='style.css'>
     </head>
     <body>
         <div id='main'>
@@ -14,38 +17,43 @@
             </div>
             <div class='tab active' id='static'>
                 <div class='center'>
-                    <p>between 0 and 255</p>
                     <form id='form_static'>
-                        <p><label for='r'>r</label><input type='number' value=0 id='r'></p>
-                        <p><label for='g'>g</label><input type='number' value=0 id='g'></p>
-                        <p><label for='b'>b</label><input type='number' value=0 id='b'></p>
                         <p>
-                            <label for='correctTemp'>fix color temp:</label>
-                            <input type='checkbox' id='correctTemp'>
+                            <label for='r'>r</label>
+                            <input type="range" min="0" max="255" value="0" id='r'>
                         </p>
-                        <p><button>submit</button></p>
+                        <p>
+                            <label for='g'>g</label>
+                            <input type="range" min="0" max="255" value="0" id='g'>
+                        </p>
+                        <p>
+                            <label for='b'>b</label>
+                            <input type="range" min="0" max="255" value="0" id='b'>
+                        </p>
+                        <p><button class="btn">submit</button></p>
                     </form>
                 </div>
             </div>
             <div class='tab' id='config'>
-                <form id='form_config'>
+                <form id='form_config' class='center'>
                     <label for='dangerous_collapse'>show dangerous settings:</label>
                     <input type='checkbox' id='dangerous_collapse'>
-                    <div id='dangerous'>
+                    <div id='dangerous' class='left'>
+                        <hr/>
                         <p class='center'>
                             <label for='raspberry_port'>port</label>
                             <input name='raspberry_port' type='number' value='' id='raspberry_port'>
                         </p>
                         <p><small>
                             setting the port to restricted ports
-                            might break your server. Restart after setting this.
+                            might break your server. Restart the server after setting this.
                         </small></p>
+                        <hr/>
                     </div>
-                    <p class='center'><button>submit</button></p>
-                </form>
-                <hr/>
-                <form id='form_restart' class='center'>
-                    <button>restart server</button>
+                    <p class='center'>
+                        <button class="btn" id="submitconf">submit</button>
+                        <button class="btn" id="restart">restart server</button>
+                    </p>
                 </form>
             </div>
             <div id='status'></div>

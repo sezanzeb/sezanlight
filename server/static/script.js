@@ -31,11 +31,6 @@ function show(button, id) {
     button.className = 'active'
 }
 
-function fixTemp(color) {
-    color.g = color.g * 180 / 255
-    color.b = color.b * 110 / 255
-}
-
 function initialize() {
     // put current color onto the frontend
     let req = new XMLHttpRequest()
@@ -60,6 +55,9 @@ function initialize() {
 }
 
 function refreshBorderColor() {
+    r = parseInt(document.getElementById('r').value)
+    g = parseInt(document.getElementById('g').value)
+    b = parseInt(document.getElementById('b').value)
     const color = 'rgb(' + r + ',' + g + ',' + b + ')'
     const elem = document.getElementById('main')
     elem.style.borderColor = color
@@ -87,11 +85,6 @@ function submit(e) {
     payload.r = parseInt(Math.min(full_on, Math.max(0, r * full_on / 255)))
     payload.g = parseInt(Math.min(full_on, Math.max(0, g * full_on / 255)))
     payload.b = parseInt(Math.min(full_on, Math.max(0, b * full_on / 255)))
-
-    if (document.getElementById('correctTemp').checked) {
-        payload.g = payload.g * 180 / 255
-        payload.b = payload.b * 110 / 255
-    }
 
     let req = new XMLHttpRequest()
     req.open('GET', '/color/set?r=' + payload.r + '&g=' + payload.g + '&b=' + payload.b, true)
@@ -154,6 +147,11 @@ function configure(e) {
 }
 
 document.getElementById('form_static').addEventListener('submit', submit)
-document.getElementById('form_config').addEventListener('submit', configure)
-document.getElementById('form_restart').addEventListener('submit', restart)
+document.getElementById('submitconf').addEventListener('click', configure)
+document.getElementById('restart').addEventListener('click', restart)
 
+for (const id of ['r', 'g', 'b']) {
+    document.getElementById(id).addEventListener('touchmove', refreshBorderColor)
+    document.getElementById(id).addEventListener('mousemove', refreshBorderColor)
+    document.getElementById(id).addEventListener('change', refreshBorderColor)
+}

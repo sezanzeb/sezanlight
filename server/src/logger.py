@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-logfile = Path(Path(__file__).parent, 'log')
+logfile = Path(Path(__file__).parent, '../log')
 logger = logging.getLogger('sezanlight')
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(str(logfile))

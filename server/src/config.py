@@ -2,7 +2,7 @@ from pathlib import Path
 import configparser
 from logger import logger
 
-config_path = 'config'
+config_path = Path(Path(__file__).parents[1], 'config').absolute()
 config = None
 
 def change_config(**options):

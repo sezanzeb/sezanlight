@@ -1,42 +1,43 @@
 body {
-    background: #111;
-    color: #eee;
     font-family: sans-serif;
     margin: 50px;
+    background: #111;
 }
 
 #main {
-    border: 5px solid RGB(128, 128, 128);
-    border-radius: 2px;
+    background: #111;
+    color: #eee;
+    border: solid RGB(128, 128, 128);
+    border-width: 100px 0px 0px 0px;
+    border-radius: 4px;
     display: table;
     margin: 0px auto;
     width: 300px;
-    transition: border-color ease-out 1.5s;
     box-sizing: border-box;
+    font-size: 15px;
 }
 
 label {
     margin-right: 10px;
+    /* make it easier touchable */
+    line-height: 44px;
+    display: inline-block;
 }
 
 label + input:not(input[type=checkbox]) {
     width: 75%;
 }
 
-input, button {
-    background: #222;
-    color: white;
-    border: 1px solid black;
-    padding: 5px 10px;
-    border-radius: 3px;
+input {
+    color: #eee;
 }
 
 .center {
     text-align: center;
 }
 
-button {
-    cursor: pointer;
+.left {
+    text-align: left;
 }
 
 .tab {
@@ -52,8 +53,13 @@ button {
     margin-bottom: 16px;
 }
 
-.active {
+.tab.active {
     display: block;
+}
+
+#form_static input[type="range"] {
+    width: 80%;
+    border: 0px;
 }
 
 #status {
@@ -79,17 +85,25 @@ button {
     width: 100%;
     background: #222;
     text-align: center;
+    border: 1px solid black;
+    border-width: 1px 0px;
+    display: flex;
+    justify-content: space-around;
 }
 
 #nav > span {
-    padding: 10px;
-    display: inline-block;
     cursor: pointer;
-    opacity: 0.3;
+    line-height: 44px;
+    flex: 1;
+    transition: 0.1s ease-out;
+    color: #777;
+    transition-property: background-color, color;
 }
 
 #nav > span.active {
     opacity: 1;
+    background: #282828;
+    color: white;
 }
 
 hr {
@@ -142,9 +156,12 @@ small {
 
 * {
     vertical-align: middle;
+    -webkit-tap-highlight-color: transparent;
+    /* hide touch highlight: */
+    background: transparent;
 }
 
-*:focus {
+*:focus, *:active {
     outline: 0px;
 }
 
@@ -152,13 +169,87 @@ small {
     cursor: pointer;
 }
 
+input, button {
+    background: #222;
+    color: white;
+    border: 1px solid black;
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-size: 15px;
+}
+
+button {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+input[type=range] {
+    background: transparent;
+    -webkit-appearance: none;
+}
+/* make knobs invisibly larger, so that they are easier to touch */
+input[type=range]::-moz-range-thumb {
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+input[type=range]::-ms-thumb {
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+/* since the knob is larger, it will stop before it reaches the ends of
+the sliders visually. make the sliders appear shorter by using inset shadows
+with the background color */
+input[type=range]::-moz-range-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+input[type=range]::-ms-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+
 @media only screen and (max-width: 959px) {
     #main {
         width: 100%;
+        height: 100vh;
+        border-radius: 0px;
     }
 
     body {
-        margin: 10px;
+        margin: 0px;
     }
 
     .tooltip {

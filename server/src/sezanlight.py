@@ -32,7 +32,6 @@ import json
 from threading import Thread
 import time
 
-
 # response codes
 OK = 200
 ERROR = 500
@@ -63,22 +62,23 @@ allowed_types = {
     '.css': 'text/css',
     '.html': 'text/html',
     '.js': 'text/javascript',
+    '.json': 'application/json',
     '.jpg': 'image/jpeg',
     '.png': 'image/png',
     '.ico': 'image/x-icon'
 }
-
 
 def static(handler):
     url = handler.path
     if url == '/':
         url = '/index.html'
 
-    staticfiles = Path(Path(__file__).parent, 'static').absolute()
+    staticfiles = Path(Path(__file__).parents[1], 'static').absolute()
+    print(staticfiles)
     filename = str(staticfiles) + url
 
     if not Path(filename).exists():
-        logger.info('file not found!')
+        logger.info('file {} not found!'.format(filename))
         handler.send_response(NOTFOUND)
         handler.end_headers()
         return
@@ -87,7 +87,7 @@ def static(handler):
     # prevents going up in the directory tree uring '..' in the url
     if not str(Path(filename).resolve()).startswith(str(staticfiles)):
         # malicious request for a file outside of staticfiles
-        logger.warning('malicious request!')
+        logger.warning('malicious request for forbidden paths!')
         # make sure to answer the same way as 404 requests
         # so that the existance of files cannot be checked using get requests
         handler.send_response(NOTFOUND)
@@ -269,6 +269,8 @@ while True:
     fader = create_fader_thread()
     server.start()
     # if code reaches this point,
-    # server was stopped. wait a second
-    # before restarting
-    time.sleep(1)
+    # server was stopped. wait a short
+    # moment before restart so that
+    # the raspberry doesn't go crazy
+    # while looping forever
+    time.sleep(0.1)

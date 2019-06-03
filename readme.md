@@ -17,7 +17,7 @@ on those with high saturation.
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png">
 </p>
 <p align="center">
-  <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.png">
+  <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.jpg">
 </p>
 <p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/photo.jpg">
@@ -64,3 +64,7 @@ also reduce the resolution of duty cicles that can be set. A possible setup woul
 - 2000hz for static colors to reduce potential eye strain. The server automatically switches to 2000hz if the color doesn't change for a long enough period of time
 
 The colors flicker when the Raspberry is under (network?) load (noticable when e.g. sending long terminal outputs over ssh via cat or similar). The flickers become more noticable on high PWM frequencies. Hence I needed to try to reduce the network traffic as much as possible (which also saves computational time in the server code) and also I cannot set the static frequency any higher.
+
+## Attribution
+
+Icon generated with: https://android-material-icon-generator.bitdroid.de/
