@@ -13,7 +13,7 @@ on those with high saturation.
 **somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
 
-<p>
+<p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png">
   <img width="240px" src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.jpg">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/photo.jpg">
