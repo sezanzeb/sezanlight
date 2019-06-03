@@ -15,9 +15,7 @@ on those with high saturation.
 
 <p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png">
-</p>
-<p align="center">
-  <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.jpg">
+  <img width="240px" src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.jpg">
 </p>
 <p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/photo.jpg">
