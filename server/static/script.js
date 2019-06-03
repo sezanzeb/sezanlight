@@ -1,5 +1,12 @@
 'use strict'
 
+let r = 0
+let g = 0
+let b = 0
+// this variable is set on all the clients and on the server as well.
+// the range of values the raspberry accepts for each color channel
+let config = { clr_range: 255 }
+
 // color and config tabs based on target attribute
 const tabs = []
 const buttons = []
@@ -29,13 +36,6 @@ for (const button of document.querySelectorAll('*[target]')) {
     }
 }
 
-// this variable is set on all the clients and on the server as well.
-// the range of values the raspberry accepts for each color channel
-let full_on = 20000 // TODO make server send this setting to the clients
-let r = 0
-let g = 0
-let b = 0
-
 function status_listener(req) {
     return function () {
         if (req.readyState != 4)
@@ -49,27 +49,35 @@ function status_listener(req) {
     }
 }
 
-function initialize() {
+function load_color() {
     // put current color onto the frontend
-    let req = new XMLHttpRequest()
-    req.open('GET', '/color/get')
-    req.onreadystatechange = function () {
-        if (req.readyState != 4 || req.status != 200)
+    let color_req = new XMLHttpRequest()
+    color_req.open('GET', '/color/get')
+    color_req.onreadystatechange = function () {
+        if (color_req.readyState != 4 || color_req.status != 200)
             return
-        let color = JSON.parse(req.responseText)
-        // raw color values will be sent, so the color temp needs to be
-        // corrected if the checkbox is ticked
-        // TODO
+        let color = JSON.parse(color_req.responseText)
         r = color['r']
         g = color['g']
         b = color['b']
         document.getElementById('r').value = r
         document.getElementById('g').value = g
         document.getElementById('b').value = b
-
         refreshBorderColor()
     }
-    req.send()
+    color_req.send()
+}
+
+function load_config() {
+    // load config from server
+    let config_req = new XMLHttpRequest()
+    config_req.open('GET', '/config')
+    config_req.onreadystatechange = function () {
+        if (config_req.readyState != 4 || config_req.status != 200)
+            return
+        config = JSON.parse(config_req.responseText)
+    }
+    config_req.send()
 }
 
 function refreshBorderColor() {
@@ -81,7 +89,6 @@ function refreshBorderColor() {
     elem.style.borderColor = color
 }
 
-initialize()
 
 /**
  * submit the current color of the input
@@ -100,9 +107,9 @@ function submit(e) {
 
     const payload = { r: 0, g: 0, b: 0 }
 
-    payload.r = parseInt(Math.min(full_on, Math.max(0, r * full_on / 255)))
-    payload.g = parseInt(Math.min(full_on, Math.max(0, g * full_on / 255)))
-    payload.b = parseInt(Math.min(full_on, Math.max(0, b * full_on / 255)))
+    payload.r = parseInt(Math.min(config.clr_range, Math.max(0, r * config.clr_range / 255)))
+    payload.g = parseInt(Math.min(config.clr_range, Math.max(0, g * config.clr_range / 255)))
+    payload.b = parseInt(Math.min(config.clr_range, Math.max(0, b * config.clr_range / 255)))
 
     let req = new XMLHttpRequest()
     req.open('GET', '/color/set?r=' + payload.r + '&g=' + payload.g + '&b=' + payload.b, true)
@@ -173,3 +180,6 @@ for (const id of ['r', 'g', 'b']) {
     document.getElementById(id).addEventListener('mousemove', refreshBorderColor)
     document.getElementById(id).addEventListener('change', refreshBorderColor)
 }
+
+load_color()
+load_config()

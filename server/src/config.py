@@ -2,7 +2,6 @@ from pathlib import Path
 import configparser
 from logger import logger
 
-config_path = Path(Path(__file__).parents[1], 'config').absolute()
 config = None
 
 def change_config(**options):
@@ -32,15 +31,19 @@ def get_config(key, default=None):
         return default
 
 
+def config_2_dict():
+    """returns a dict of the complete config"""
+    return {k: v for (k, v) in config['root'].items()}
+
+
 def load_config():
     """reads the config file and returns the
     configparser instance"""
 
     global config, config_path
 
-    try:
-        config_path = Path(Path(__file__).resolve().parent, Path('config')).resolve()
-    except FileNotFoundError:
+    config_path = Path(__file__).absolute().parents[1] / 'config'
+    if not config_path.exists():
         # create empty config
         with open(str(config_path), 'w+') as f:
             pass

@@ -41,7 +41,7 @@ last_message_timestamp = 0
 def sendcolor(r, g, b, ip, port, checks_per_second,
               client_id, max_timeout, mode=SCREEN_COLOR):
     """sends a get request to the LED server using curl
-    - r, g and b are the colors between 0 and full_on. can be floats
+    - r, g and b are the colors between 0 and clr_range. can be floats
     - ip and port those of the raspberry
     - check_per_second is how often this client will (try to) make such reqeusts per seoncds
     - client_id is an identifier for the current "stream" of messages from this client
@@ -128,9 +128,9 @@ def main(argv):
     linear_smoothing = True
     brightness = [1.00, 0.85, 0.5]
     gamma = [1.10, 0.88, 0.7]
-    # 0 = no nrmalization, 0.5 = increase lightness, 1 = normalize to full_on
+    # 0 = no nrmalization, 0.5 = increase lightness, 1 = normalize to clr_range
     normalize = 0
-    # if False, will normalize the max value to full_on, if True wil normalize the sum to it
+    # if False, will normalize the max value to clr_range, if True wil normalize the sum to it
     # setting it to True will basically favor saturated colors over grey/white ones during normalization
     normalize_sum = True
     # 0 = no adjustment, 0.5 = increases saturation, 1 = darkest color becomes 0 (prevents gray values alltogether)
@@ -201,7 +201,7 @@ def main(argv):
     # TODO make server send this setting to the clients
     # have this as float, because r, g and b are floats during
     # filtering in order to improve type compatibility stuff.
-    full_on = 20000
+    clr_range = 20000
 
     # some checking for broken configurations
     if lines == 0:
@@ -272,30 +272,30 @@ def main(argv):
                 x = int((screen_width % columns) / 2 + (screen_width / columns) * j)
                     
                 c = Color(image_rgb.im[x])
-                c_r = full_on * c.red / 256
-                c_g = full_on * c.green / 256
-                c_b = full_on * c.blue / 256
+                c_r = clr_range * c.red / 256
+                c_g = clr_range * c.green / 256
+                c_b = clr_range * c.blue / 256
                 # give saturated colors (like green, purple, blue, orange, ...) more weight
                 # over grey colors
                 # difference between lowest and highest value should do the trick already
                 diff = ((max(max(c_r, c_g), c_b) - min(min(c_r, c_g), c_b)))
-                weight = diff / full_on * 5 + 1
+                weight = diff / clr_range * 5 + 1
                 r[i * columns + j] = c_r * weight
                 g[i * columns + j] = c_g * weight
                 b[i * columns + j] = c_b * weight
                 weights[i * columns + j] = weight
 
         # average color per pixel, also divide by avg weight so that it's
-        # within the bounds of the color space of the calculation (full_on)
+        # within the bounds of the color space of the calculation (clr_range)
         weight = sum(weights) / len(weights)
         r = sum(r) / len(r) / weight
         g = sum(g) / len(g) / weight
         b = sum(b) / len(b) / weight
         logger.debug("observed color : {} {} {}".format(r, g, b))
-        # r g and b are now between 0 and full_on
+        # r g and b are now between 0 and clr_range
 
         # only do stuff if the color changed.
-        # the server only fades when the new color exceeds a threshold of 2.5% of full_on
+        # the server only fades when the new color exceeds a threshold of 2.5% of clr_range
         # in the added deltas. to not waste computational power of the pi and network bandwith,
         # do nothing.
         delta_clr = abs(r - r_old) + abs(g - g_old) + abs(b - b_old)
@@ -351,14 +351,14 @@ def main(argv):
                 logger.debug("saturated color: {} {} {}".format(r, g, b))
 
             if normalize > 0:
-                # normalize it so that the lightest value is e.g. full_on
+                # normalize it so that the lightest value is e.g. clr_range
                 # max with 1 to prevent division by zero
                 old_max
                 if normalize_sum:
                     old_max = r + g + b
                 else:
                     old_max = max(max(r, g), b)
-                new_max = full_on
+                new_max = clr_range
                 r = r * (1 - normalize) + r * new_max * normalize / old_max
                 g = g * (1 - normalize) + g * new_max * normalize / old_max
                 b = b * (1 - normalize) + b * new_max * normalize / old_max
@@ -367,24 +367,24 @@ def main(argv):
             # correct led color temperature
             # 1. gamma
             if gamma[0] > 0:
-                r = pow(r / full_on, 1 / gamma[0]) * full_on
+                r = pow(r / clr_range, 1 / gamma[0]) * clr_range
             if gamma[1] > 0:
-                g = pow(g / full_on, 1 / gamma[1]) * full_on
+                g = pow(g / clr_range, 1 / gamma[1]) * clr_range
             if gamma[2] > 0:
-                b = pow(b / full_on, 1 / gamma[2]) * full_on
+                b = pow(b / clr_range, 1 / gamma[2]) * clr_range
             # 2. brightness
             r = r * brightness[0]
             g = g * brightness[1]
             b = b * brightness[2]
             # 3. clip into color range
-            r = min(full_on, max(0.0, r))
-            g = min(full_on, max(0.0, g))
-            b = min(full_on, max(0.0, b))
+            r = min(clr_range, max(0.0, r))
+            g = min(clr_range, max(0.0, g))
+            b = min(clr_range, max(0.0, b))
             logger.debug("gamma/bright fix: {} {} {}".format(r, g, b))
 
 
             # for VERY dark colors, make it more gray to prevent supersaturated colors like (0, 1, 0).
-            darkness = ((r_old + g_old + b_old) / 3) / full_on
+            darkness = ((r_old + g_old + b_old) / 3) / clr_range
             greyscaling = max(0.0, min(0.085, darkness) / 0.085)
             if greyscaling < 1:
                 # for super dark colors, just use gray

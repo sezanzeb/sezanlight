@@ -26,7 +26,7 @@ from pathlib import Path
 from fader import Fader
 from server import server
 from logger import logger
-from config import change_config, get_config, load_config
+from config import change_config, get_config, load_config, config_2_dict
 from shutil import copyfile
 import json
 from threading import Thread
@@ -73,8 +73,7 @@ def static(handler):
     if url == '/':
         url = '/index.html'
 
-    staticfiles = Path(Path(__file__).parents[1], 'static').absolute()
-    print(staticfiles)
+    staticfiles = Path(__file__).absolute().parents[1] / 'static'
     filename = str(staticfiles) + url
 
     if not Path(filename).exists():
@@ -214,6 +213,8 @@ def writecolor(handler):
 
     # send ok
     handler.send_response(OK)
+    # otherwise complains about "no root element found":
+    handler.send_header('Content-type', 'text/plain')
     handler.end_headers()
 
 
@@ -225,6 +226,7 @@ def config_endpoint(handler):
     if len(params) > 0:
         change_config(**params)
         handler.send_response(OK)
+        handler.send_header('Content-type', 'text/plain')
         handler.end_headers()
     else:
         handler.send_response(BADREQUEST)
@@ -247,13 +249,15 @@ def restart(handler):
 
 
 def send_config(handler):
-    # TODO
-    # sends JSON of the config file to any client
-    # 1. for the frontend config tab
-    # 2. to sync the full_on setting
-    # and also rename full_on to range
-    # and add it to config
-    pass
+    """sends JSON of the config file to any client
+    1. for the frontend config tab
+    2. to sync the clr_range setting"""
+    logger.info('request for config values')
+    handler.send_response(OK)
+    handler.send_header('Content-type', 'application/json')
+    handler.end_headers()
+    # just send what the current color is
+    handler.wfile.write(bytes(json.dumps(config_2_dict()), 'utf-8'))
 
 
 # add all the routes to the server
