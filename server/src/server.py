@@ -69,7 +69,7 @@ class SezanlightRequestHandler:
 
     def start(self):        
         raspberry_ip = get_config('raspberry_ip', '0.0.0.0')
-        raspberry_port = int(get_config('raspberry_port', 3546))
+        raspberry_port = get_config('raspberry_port', 3546)
 
         logger.info('listening on {}:{}'.format(raspberry_ip, raspberry_port))
         self.httpserver = HTTPServer((raspberry_ip, raspberry_port), BaseServer)

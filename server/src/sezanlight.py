@@ -115,7 +115,7 @@ def staticmatcher(url):
     return url[url.rfind('.'):] in allowed_types
 
 
-def readcolor(handler):
+def read_color(handler):
     logger.info('request to read the current LED colors')
     handler.send_response(OK)
     handler.send_header('Content-type', 'application/json')
@@ -125,7 +125,7 @@ def readcolor(handler):
         *[round(x) for x in fader.get_color()]), 'utf-8'))
 
 
-def writecolor(handler):
+def write_color(handler):
     global fader, stop_client_ids, current_client_id
 
     url = handler.path
@@ -218,7 +218,7 @@ def writecolor(handler):
     handler.end_headers()
 
 
-def config_endpoint(handler):
+def set_config(handler):
     # write the received JSON into the config
     content_len = int(handler.headers.get('Content-Length'))
     body = handler.rfile.read(content_len).decode('utf-8')
@@ -226,7 +226,7 @@ def config_endpoint(handler):
     if len(params) > 0:
         change_config(**params)
         handler.send_response(OK)
-        handler.send_header('Content-type', 'text/plain')
+        handler.send_header('Content-type', 'text/plain')   
         handler.end_headers()
     else:
         handler.send_response(BADREQUEST)
@@ -261,9 +261,9 @@ def send_config(handler):
 
 
 # add all the routes to the server
-server.add_route('POST', '/config', config_endpoint)
-server.add_route('GET', '/color/set', writecolor)
-server.add_route('GET', '/color/get', readcolor)
+server.add_route('POST', '/config', set_config)
+server.add_route('GET', '/color/set', write_color)
+server.add_route('GET', '/color/get', read_color)
 server.add_route('GET', staticmatcher, static)
 server.add_route('GET', '/restart', restart)
 server.add_route('GET', '/config', send_config)

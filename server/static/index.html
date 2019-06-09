@@ -7,6 +7,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <link rel="icon" href="icons/mipmap-xxxhdpi/ic_launcher.png">
+
         <link rel='stylesheet' type='text/css' href='style.css'>
     </head>
     <body>
@@ -16,7 +17,7 @@
                 <span target='config'>Config</span>
             </div>
             <div class='tab' id='color'>
-                <div class='center'>
+                <div class='center content'>
                     <form id='form_static'>
                         <p>
                             <label for='r'>r</label>
@@ -30,33 +31,77 @@
                             <label for='b'>b</label>
                             <input type="range" min="0" max="255" value="0" id='b'>
                         </p>
-                        <p><button class="btn">submit</button></p>
+                        <p><button class="">
+                            submit
+                        </button></p>
                     </form>
                 </div>
             </div>
             <div class='tab' id='config'>
                 <form id='form_config' class='center'>
-                    <label for='dangerous_collapse'>show dangerous settings:</label>
-                    <input type='checkbox' id='dangerous_collapse'>
-                    <div id='dangerous' class='left'>
-                        <hr/>
-                        <p class='center'>
-                            <label for='raspberry_port'>port</label>
-                            <input name='raspberry_port' type='number' value='' id='raspberry_port'>
-                        </p>
-                        <p><small>
-                            setting the port to restricted ports
+                    <!--<hr />
+                    <input type='checkbox' class='mdl-checkbox__input' id='dangerous_collapse' />
+                    <label for='dangerous_collapse'>show dangerous settings</label>
+                    <div id='dangerous' class='left'>-->
+                    <div class='content'>
+                        <h2>GPIO-Pins</h2>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_r'>r</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_r' type='number' value='' id='gpio_r' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_g'>g</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_g' type='number' value='' id='gpio_g' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_b'>b</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_b' type='number' value='' id='gpio_b' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <p class='left'><small>
+                            Restart the server afterwards
+                        </small></p>
+                        <h2>Network</h2>
+                        <div class='config-row left'>
+                            <label class='config-label' for='raspberry_port'>Port</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='raspberry_port' type='number' value='' id='raspberry_port' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <p class='left'><small>
+                            Setting the port to restricted ports
                             might break your server. Restart the server after setting this.
                         </small></p>
-                        <hr/>
                     </div>
+                    <!--</div><hr />-->
                     <p class='center'>
-                        <button class="btn" id="submitconf">submit</button>
-                        <button class="btn" id="restart">restart server</button>
+                        <button id="submitconf">
+                            submit
+                        </button>
+                        <button id="restart">
+                            restart server
+                        </button>
                     </p>
                 </form>
             </div>
-            <div id='status'></div>
+            <div id='status' class='hidden'></div>
         </div>
     </body>
     <script src='script.js'></script>

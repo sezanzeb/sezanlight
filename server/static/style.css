@@ -1,35 +1,31 @@
 body {
-    font-family: sans-serif;
-    margin: 50px;
     background: #111;
+    margin: 0px;
+    margin-bottom: 50px;
+    font-family: 'Roboto', 'Open Sans', sans-serif, 'Arial';
 }
 
 #main {
     background: #111;
-    color: #eee;
-    border: solid RGB(128, 128, 128);
-    border-width: 100px 0px 0px 0px;
+    color: white;
     border-radius: 4px;
     display: table;
-    margin: 0px auto;
+    margin: 50px auto;
     width: 300px;
     box-sizing: border-box;
-    font-size: 15px;
+    font-size: 16px;
+    overflow: hidden;
 }
 
 label {
     margin-right: 10px;
     /* make it easier touchable */
-    line-height: 44px;
+    line-height: 30px;
     display: inline-block;
 }
 
 label + input:not(input[type=checkbox]) {
     width: 75%;
-}
-
-input {
-    color: #eee;
 }
 
 .center {
@@ -42,19 +38,15 @@ input {
 
 .tab {
     display: None;
-    padding: 0px 20px;
-}
-
-.tab > *:first-child {
-    margin-top: 16px;
-}
-
-.tab > *:last-child {
-    margin-bottom: 16px;
+    color: white;
 }
 
 .tab.active {
     display: block;
+}
+
+.content {
+    margin: 30px 20px;
 }
 
 #form_static input[type="range"] {
@@ -67,28 +59,31 @@ input {
     text-align: center;
     box-sizing: border-box;
     max-height: 50px;
-    line-height: 30px;
-    height: 32px;
-    font-size: 12px;
+    line-height: 40px;
+    height: 41px;
+    font-size: 16px;
     transition: max-height ease-out 0.5s;
     overflow: hidden;
-    border-top: 1px solid #333;
-    opacity: 0.5;
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    background: black;
+    color: white;
 }
 
+#status.hidden,
 #status:empty {
     max-height: 0px;
-    border: 0px;
 }
 
 #nav {
     width: 100%;
     background: #222;
     text-align: center;
-    border: 1px solid black;
-    border-width: 1px 0px;
+    box-shadow: 0px 1px 1px black;
     display: flex;
     justify-content: space-around;
+    padding-top: 100px;
 }
 
 #nav > span {
@@ -96,18 +91,42 @@ input {
     line-height: 44px;
     flex: 1;
     transition: 0.1s ease-out;
-    color: #777;
     transition-property: background-color, color;
+    text-transform: uppercase;
 }
 
 #nav > span.active {
     opacity: 1;
-    background: #282828;
-    color: white;
+    border-bottom: 2px solid white;
+}
+
+h2 {
+    font-size: 16px;
+    margin: 40px 0px 0px 0px;
+    line-height: 23px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.dark #nav > span.active {
+    border-color: #222;
+}
+.dark #nav > span {
+    color: #222;
+}
+
+.config-row {
+    display: flex;
+    flex-flow: row nowrap;
+    margin: 10px 0px;
+}
+
+.config-row > * {
+    margin: 0px;
+    flex: max-content;
 }
 
 hr {
-    margin: 20px;
     border: 0px;
     border-top: 1px solid #222;
 }
@@ -142,16 +161,57 @@ p:hover > span.tooltip {
 
 small {
     opacity: 0.3;
+    line-height: 14px;
 }
 
 #dangerous {
     max-height: 0px;
     overflow: hidden;
-    transition: max-height ease-out 0.5s;
+    transition: all ease-out 0.5s;
+    margin: 0px 20px;
 }
 
-#dangerous_collapse:checked + #dangerous {
+#dangerous_collapse:checked + label + #dangerous {
     max-height: 500px;
+}
+
+.mdl-textfield__input {
+    border-color: rgba(255, 255, 255, .12);
+    display: inline-block;
+    line-height: 30px;
+    padding: 0px;
+}
+
+.relative-wrap {
+    display: inline-block;
+    position: relative;
+}
+
+.relative-wrap input + .vertical-line {
+    background: white;
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 0px;
+    height: 2px;
+    transition: all 0.2s ease-out;
+}
+
+.relative-wrap input:focus + .vertical-line {
+    left: 0px;
+    right: 0px;
+}
+
+.config-input .relative-wrap {
+    width: 100%;
+}
+
+.config-input {
+    flex: 3;
+}
+
+.config-label {
+    flex: 1;
 }
 
 * {
@@ -169,18 +229,29 @@ small {
     cursor: pointer;
 }
 
-input, button {
-    background: #222;
+button {
+    border: 0px;
     color: white;
-    border: 1px solid black;
-    padding: 10px 20px;
-    border-radius: 3px;
-    font-size: 15px;
+    text-transform: uppercase;
+    font-size: 14px;
+    background: #222;
+    border-radius: 2px;
+    line-height: 36px;
+    box-shadow: 0px 2px 2px #00000047;
+    padding: 0px 12px;
 }
 
-button {
-    margin-left: 3px;
-    margin-right: 3px;
+button + button {
+    margin-left: 15px;
+}
+
+input[type=number] {
+    color: white;
+    font-size: 16px;
+    border: 0px;
+    border-bottom: 1px solid #333;
+    line-height: 28px;
+    width: 100%;
 }
 
 input[type=range] {
@@ -246,9 +317,6 @@ input[type=range]::-ms-track {
         width: 100%;
         height: 100vh;
         border-radius: 0px;
-    }
-
-    body {
         margin: 0px;
     }
 

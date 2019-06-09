@@ -15,19 +15,35 @@ def change_config(**options):
     # write back, but without the mandatory header
     config_string = '\n'.join(['{}={}'.format(k, v)
                                for (k, v) in config['root'].items()])
-    print(config_string)
     with open(str(config_path), 'w') as f:
         f.write(config_string)
         f.write('\n')
 
 
-def get_config(key, default=None):
+def get_config(key, default=None, cast=None):
     """reads from the config file, if key not available,
-    will return the value of the default kwarg"""
+    will return the value of the default kwarg.
+    
+    If cast is None, it will be tried to parse it as int,
+    and will be a string otherwise. Examples: int, str,
+    can also be a function to parse the value.
+    
+    Will also add the default value to the loaded config
+    object, so that future calls to get_config return
+    the previously used default."""
 
     if key in config['root']:
-        return config['root'][key]
+        value = config['root'][key]
+        if cast is None:
+            try:
+                value = int(value)
+            except:
+                pass
+        if isinstance(cast, type):
+            value = cast(value)
+        return value
     else:
+        config.set('root', key, default)
         return default
 
 

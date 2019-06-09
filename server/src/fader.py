@@ -4,6 +4,7 @@ import traceback
 import time
 from threading import Thread, Semaphore
 from logger import logger
+from config import get_config, config_2_dict
 
 import pigpio
 pi = pigpio.pi()
@@ -39,37 +40,36 @@ HW_CHANNEL2 = 12  # shared with 18
 # https://raspberrypi.stackexchange.com/a/64257
 # https://github.com/fivdi/pigpio/blob/master/doc/gpio.md
 
-config = {
-    'r': {
-        'pin': 17,
-        'freqs': {
-            'continuous': 500,
-            'static': 2000
-        },
-        'threshold': 0.025
-    },
-    'g': {
-        'pin': HW_CHANNEL1,
-        'freqs': {
-            'continuous': 3000,
-            'static': 4000
-        },
-        'threshold': 0.005
-    },
-    'b': {
-        'pin': HW_CHANNEL2,
-        'freqs': {
-            'continuous': 1500,
-            'static': 4000
-        },
-        'threshold': 0.005
-    }
-}
-
-
 class Fader(Thread):
 
     def __init__(self):
+
+        self.config = {
+            'r': {
+                'pin': get_config('gpio_r', 17),
+                'freqs': {
+                    'continuous': 500,
+                    'static': 2000
+                },
+                'threshold': 0.025
+            },
+            'g': {
+                'pin': get_config('gpio_g', HW_CHANNEL1),
+                'freqs': {
+                    'continuous': 3000,
+                    'static': 4000
+                },
+                'threshold': 0.005
+            },
+            'b': {
+                'pin': get_config('gpio_b', HW_CHANNEL2),
+                'freqs': {
+                    'continuous': 1500,
+                    'static': 4000
+                },
+                'threshold': 0.005
+            }
+        }
 
         self.logger = logger
 
@@ -109,19 +109,19 @@ class Fader(Thread):
         self.current_color_mode = None
 
         # setup the PWM
-        pi.set_PWM_range(config['r']['pin'], self.range)
-        pi.set_PWM_range(config['g']['pin'], self.range)
-        pi.set_PWM_range(config['b']['pin'], self.range)
+        pi.set_PWM_range(self.config['r']['pin'], self.range)
+        pi.set_PWM_range(self.config['g']['pin'], self.range)
+        pi.set_PWM_range(self.config['b']['pin'], self.range)
         self.set_freq('continuous')
         self.set_pwm_dutycycle([0, 0, 0])
 
         logger.info('resolutions of channels in continuous mode:')
         logger.info(
-            '- r: {}'.format(pi.get_PWM_real_range(config['r']['pin'])))
+            '- r: {}'.format(pi.get_PWM_real_range(self.config['r']['pin'])))
         logger.info(
-            '- g: {}'.format(pi.get_PWM_real_range(config['g']['pin'])))
+            '- g: {}'.format(pi.get_PWM_real_range(self.config['g']['pin'])))
         logger.info(
-            '- b: {}'.format(pi.get_PWM_real_range(config['b']['pin'])))
+            '- b: {}'.format(pi.get_PWM_real_range(self.config['b']['pin'])))
 
         self.run_fader = True
 
@@ -144,11 +144,11 @@ class Fader(Thread):
         # from freq depending on the available frequencies
         if mode != self.current_color_mode:
             pi.set_PWM_frequency(
-                config['r']['pin'], config['r']['freqs'][mode])
+                self.config['r']['pin'], self.config['r']['freqs'][mode])
             pi.set_PWM_frequency(
-                config['g']['pin'], config['g']['freqs'][mode])
+                self.config['g']['pin'], self.config['g']['freqs'][mode])
             pi.set_PWM_frequency(
-                config['b']['pin'], config['b']['freqs'][mode])
+                self.config['b']['pin'], self.config['b']['freqs'][mode])
             self.current_color_mode = mode
             self.logger.info('switching to {} mode'.format(mode))
 
@@ -162,8 +162,8 @@ class Fader(Thread):
         hardware_pins = [12, 18, 13, 19]
 
         for c, color in enumerate(['r', 'g', 'b']):
-            pin = config[color]['pin']
-            freq = config[color]['freqs'][self.current_color_mode]
+            pin = self.config[color]['pin']
+            freq = self.config[color]['freqs'][self.current_color_mode]
             value = values[c]
 
             if pin in hardware_pins:
@@ -198,7 +198,7 @@ class Fader(Thread):
 
         for c, color in enumerate(['r', 'g', 'b']):
             delta = abs(values[c] - self.target_color[c])
-            if delta > config[color]['threshold']:
+            if delta > self.config[color]['threshold']:
                 self.target_color[c] = max(0, min(self.range, values[c]))
                 change_happened = True
 

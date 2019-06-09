@@ -6,6 +6,7 @@ let b = 0
 // this variable is set on all the clients and on the server as well.
 // the range of values the raspberry accepts for each color channel
 let config = { clr_range: 255 }
+let hide_status_timeout = null
 
 // color and config tabs based on target attribute
 const tabs = []
@@ -36,7 +37,13 @@ for (const button of document.querySelectorAll('*[target]')) {
     }
 }
 
-function status_listener(req) {
+
+/**
+ * event listener for onreadystatechange that displays error messages
+ * from the server on the frontend, e.g. after submitting colors and stuff
+ * @param {request} req 
+ */
+function status_listener(req, show_ok) {
     return function () {
         if (req.readyState != 4)
             return
@@ -45,10 +52,29 @@ function status_listener(req) {
         if (req.status != 200 && status == '') {
             status = req.status
         }
-        document.getElementById('status').innerHTML = status
+        // if everything is fine, just display a short note that it worked out
+        if (show_ok && req.status == 200 && status == '') {
+            status = 'success'
+            if (hide_status_timeout !== null) {
+                window.clearTimeout(hide_status_timeout)
+            }
+            hide_status_timeout = window.setTimeout(function() {
+                document.getElementById('status').className = 'hidden'
+            }, 1000)
+        }
+        if (status != '') {
+            document.getElementById('status').className = ''
+            document.getElementById('status').innerHTML = status
+        }
     }
 }
 
+
+/**
+ * asks the server about the current LED color and stores
+ * it in variables. also calls refreshBorderColor to show
+ * it in the frontend
+ */
 function load_color() {
     // put current color onto the frontend
     let color_req = new XMLHttpRequest()
@@ -68,6 +94,7 @@ function load_color() {
     color_req.send()
 }
 
+
 function load_config() {
     // load config from server
     let config_req = new XMLHttpRequest()
@@ -76,17 +103,39 @@ function load_config() {
         if (config_req.readyState != 4 || config_req.status != 200)
             return
         config = JSON.parse(config_req.responseText)
+        // write keys into inputs, if available
+        for (const key of Object.keys(config)) {
+            const elem = document.getElementById(key)
+            if (elem != null) {
+                elem.value = config[key]
+            }
+        }
     }
     config_req.send()
 }
 
+
+/**
+ * colorizes parts of the frontend to the colors of the
+ * current user input
+ */
 function refreshBorderColor() {
     r = parseInt(document.getElementById('r').value)
     g = parseInt(document.getElementById('g').value)
     b = parseInt(document.getElementById('b').value)
-    const color = 'rgb(' + r + ',' + g + ',' + b + ')'
-    const elem = document.getElementById('main')
-    elem.style.borderColor = color
+
+    // change backgrounds
+    const bgcolor = 'rgb(' + r + ',' + g + ',' + b + ')'
+    document.getElementById('main').style.borderColor = bgcolor
+    document.getElementById('nav').style.backgroundColor = bgcolor
+
+    // make font black if background becomes too light
+    if (r + g * 3 + b * 0.5 > 1000) {
+        // dark text
+        document.getElementById('main').className = 'dark'
+    } else {
+        document.getElementById('main').removeAttribute('class')
+    }
 }
 
 
@@ -103,8 +152,6 @@ function submit(e) {
     if (isNaN(g)) g = 0
     if (isNaN(b)) b = 0
 
-    console.log(r, g, b)
-
     const payload = { r: 0, g: 0, b: 0 }
 
     payload.r = parseInt(Math.min(config.clr_range, Math.max(0, r * config.clr_range / 255)))
@@ -114,7 +161,7 @@ function submit(e) {
     let req = new XMLHttpRequest()
     req.open('GET', '/color/set?r=' + payload.r + '&g=' + payload.g + '&b=' + payload.b, true)
 
-    req.onreadystatechange = status_listener(req)
+    req.onreadystatechange = status_listener(req, false)
 
     req.send()
 
@@ -123,6 +170,7 @@ function submit(e) {
     e.preventDefault()
     return false
 }
+
 
 /**
  * tell the server to stop and restart 
@@ -135,6 +183,7 @@ function restart(e) {
     e.preventDefault()
     return false
 }
+
 
 /**
  * sends the configuration from the config
@@ -163,7 +212,7 @@ function configure(e) {
         payload[key] = value
     }
 
-    req.onreadystatechange = status_listener(req)
+    req.onreadystatechange = status_listener(req, true)
 
     req.send(JSON.stringify(payload))
 
