@@ -6,11 +6,25 @@ that has single-color rgb lights, which are controlled using one PWM gpio pin pe
 It sparsly checks a few places on the screen (250 pixels by default) and puts extra weight
 on those with high saturation.
 
-**worked with:**
+**TODO**
+
+- Add .deb package for server and client to make installation much easier.
+- Check if mqtt support can be added to the server
+- Make the gtk interface minimizable to the tray and add sliders like on the android app
+- Check Phillips LED interface and see If Sezanlight can be made to support it.
+
+**Why I don't use Hyperion**
+
+Maybe I'm wrong with the following two claims, but those are the reasons for me
+- Hyperion only supports digital LEDs. I need to have support for smd5050 LEDs, which is more affordable.
+- Also, I don't want to add so much extra hardware like grabbers and switches to be able to control
+them based on my (linux) computer screen.
+
+**Worked with:**
 - manjaro xfce
 - xubuntu 19.04
 
-**somewhat worked with:**
+**Somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
 
 <p align="center">
