@@ -6,7 +6,7 @@ that has single-color rgb lights, which are controlled using one PWM gpio pin pe
 It sparsly checks a few places on the screen (250 pixels by default) and puts extra weight
 on those with high saturation.
 
-**TODO**
+**Future**
 
 - Add .deb package for server and client to make installation much easier.
 - Check if mqtt support can be added to the server
