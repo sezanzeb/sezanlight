@@ -21,7 +21,7 @@ see what this xshmgetimage stuff is and - if it does something similar - see if 
 **Why I don't use Hyperion**
 
 Maybe I'm wrong with the following two claims, but those are the reasons for me
-- Hyperion only supports digital LEDs. I need to have support for smd5050 LEDs, which is more affordable.
+- Hyperion only supports digital LEDs. I need to have support for smd5050 LEDs, which are more affordable.
 - Also, I don't want to add so much extra hardware like grabbers and switches to be able to control
 them based on my (linux) computer screen.
 
