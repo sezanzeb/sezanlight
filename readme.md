@@ -18,7 +18,7 @@ see what this xshmgetimage stuff is and - if it does something similar - see if 
 - https://stackoverflow.com/questions/30200689/perfomance-of-xgetimage-xputimage-vs-xcopyarea-vs-xshmgetimage-xshmputima
 
 
-**Why I don't use Hyperion**
+**An Alternative to Hyperion**
 
 Maybe I'm wrong with the following two claims, but those are the reasons for me
 - Hyperion only supports digital LEDs. I need to have support for smd5050 LEDs, which are more affordable.
