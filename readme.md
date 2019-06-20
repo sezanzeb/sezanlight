@@ -13,6 +13,11 @@ on those with high saturation.
 - Make the gtk interface minimizable to the tray and add sliders like on the android app
 - Check Phillips LED interface and see If Sezanlight can be made to support it.
 
+see what this xshmgetimage stuff is and - if it does something similar - see if it is faster:
+- https://stackoverflow.com/questions/43442675/how-to-use-xshmgetimage-and-xshmputimage 
+- https://stackoverflow.com/questions/30200689/perfomance-of-xgetimage-xputimage-vs-xcopyarea-vs-xshmgetimage-xshmputima
+
+
 **Why I don't use Hyperion**
 
 Maybe I'm wrong with the following two claims, but those are the reasons for me
@@ -49,12 +54,6 @@ Just setting a single color once. Type
 into your browser (replace 192.168.1.100:3546 with your raspberries local ip and the port on which the server is running. 3546 is the default port)
 
 and use the web tool. You can also use this to check if the server works, as no configuration on the client is needed for that.
-
-## Future
-
-see what this xshmgetimage stuff is and if it is faster if it does something similar:
-- https://stackoverflow.com/questions/43442675/how-to-use-xshmgetimage-and-xshmputimage 
-- https://stackoverflow.com/questions/30200689/perfomance-of-xgetimage-xputimage-vs-xcopyarea-vs-xshmgetimage-xshmputima
 
 ## Problems
 
