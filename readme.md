@@ -2,6 +2,9 @@
 
 Reads your **X Window System Linux** screen contents and sends it to a remote raspberry
 that has single-color rgb lights, which are controlled using one PWM gpio pin per R, G and B.
+Hence it does not need splitter and grabber hardware.
+
+This is the complete hardware setup you will need: https://dordnung.de/raspberrypi-ledstrip/
 
 It sparsly checks a few places on the screen (250 pixels by default) and puts extra weight
 on those with high saturation.
@@ -22,7 +25,7 @@ see what this xshmgetimage stuff is and - if it does something similar - see if 
 
 Maybe I'm wrong with the following two claims, but those are the reasons for me
 - Hyperion only supports digital LEDs. I need to have support for smd5050 LEDs, which are more affordable.
-- Also, I don't want to add so much extra hardware like grabbers and switches to be able to control
+- Also, I don't want to add so much extra hardware like grabbers and splitters to be able to control
 them based on my (linux) computer screen.
 
 **Worked with:**
