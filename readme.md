@@ -32,6 +32,8 @@ them based on my (linux) computer screen.
 **Somewhat worked with:**
 - manjaro cinnamon (colors jumping on static images, xwd dumps also seem to be inconsistent)
 
+**Screenshots**
+
 <p align="center">
   <img src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/gtk.png">
   <img width="240px" src="https://github.com/sezanzeb/sezanlight/blob/master/screenshots/web.jpg">
