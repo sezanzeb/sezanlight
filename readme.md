@@ -15,6 +15,7 @@ on those with high saturation.
 - Check if mqtt support can be added to the server
 - Make the gtk interface minimizable to the tray and add sliders like on the android app
 - Check Phillips LED interface and see If Sezanlight can be made to support it.
+- Add a calibration interface to the web tool
 
 see what this xshmgetimage stuff is and - if it does something similar - see if it is faster:
 - https://stackoverflow.com/questions/43442675/how-to-use-xshmgetimage-and-xshmputimage 
