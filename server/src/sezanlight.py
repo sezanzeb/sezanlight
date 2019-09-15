@@ -54,6 +54,9 @@ stop_client_ids = []
 def create_fader_thread():
     fader = Fader()
     fader.start()
+    default = [get_config('default_r', 0), get_config('default_g', 0), get_config('default_b', 0)]
+    default = [c * get_config('clr_range') / 255 for c in default]
+    fader.set_target(default)
     return fader
 
 
@@ -246,6 +249,9 @@ def restart(handler):
 
     # restart will be done automatically
     # when the server shuts down
+    handler.send_response(OK)
+    handler.send_header('Content-type', 'text/plain')   
+    handler.end_headers()
 
 
 def send_config(handler):

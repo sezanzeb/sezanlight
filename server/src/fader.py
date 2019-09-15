@@ -264,7 +264,7 @@ class Fader(Thread):
                         ]
                         # print(self.fade_state, self.r_target, self.g_target, self.b_target)
                         self.set_pwm_dutycycle(self.current_color)
-                        # logger.info('{} {} {}'.format(r, g, b))
+                        # logger.info('{} {} {}'.format(*self.current_color))
 
                 else:
                     # after 3 minutes increase the LED frequency

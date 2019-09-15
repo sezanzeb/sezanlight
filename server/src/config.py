@@ -9,6 +9,7 @@ def change_config(**options):
     writes their values into the config"""
 
     # overwrite values
+    print(options)
     for k, v in options.items():
         config.set('root', k, v)
 

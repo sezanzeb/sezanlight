@@ -214,6 +214,7 @@ function configure(e) {
 
     req.onreadystatechange = status_listener(req, true)
 
+    console.log(payload)
     req.send(JSON.stringify(payload))
 
     e.preventDefault()

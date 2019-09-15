@@ -17,7 +17,6 @@ class BaseServer(BaseHTTPRequestHandler):
         match = False
 
         for key, handler in handlers[method]:
-
             # matcher might be a string
             # or a function
             matcher = key
