@@ -1,7 +1,7 @@
 # stuff
 
 .vscode
-config
+# config
 log
 install/pkg
 install/sezanlight/
