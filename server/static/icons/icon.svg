@@ -1,0 +1,35 @@
+<svg version="1.1" 
+    xmlns="http://www.w3.org/2000/svg" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" width="48" height="48">
+    <defs>
+        <linearGradient x1="13.60521" y1="9.1503" x2="66.63698" y2="71.09189" gradientUnits="userSpaceOnUse" id="color-1">
+            <stop offset="0" stop-color="#000000" stop-opacity="0.3"></stop>
+            <stop offset="1" stop-color="#000000" stop-opacity="0"></stop>
+        </linearGradient>
+        <filter id="dropshadow-base">
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .8 0"></feColorMatrix>
+            <feOffset dx="0" dy="1"></feOffset>
+            <feGaussianBlur stdDeviation="1"></feGaussianBlur>
+            <feComposite in="SourceGraphic"></feComposite>
+        </filter>
+        <filter id="dropshadow-banner" x="-10%" y="-10%" width="120%" height="130%">
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .4 0"></feColorMatrix>
+            <feOffset dx="0" dy="1"></feOffset>
+            <feGaussianBlur stdDeviation="0.5"></feGaussianBlur>
+            <feComposite in="SourceGraphic"></feComposite>
+        </filter>
+    </defs>
+    <g fill="none" fill-rule="nonzero" stroke="none" stroke-width="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+        <path d="M2,24c0,-12.15026 9.84974,-22 22,-22c12.15026,0 22,9.84974 22,22c0,12.15026 -9.84974,22 -22,22c-12.15026,0 -22,-9.84974 -22,-22z" id="base 1 5" fill="#3c0081" stroke-width="1"></path>
+        <path d="M19.54509,35.87976l2.35739,0l-3.40615,-3.40615c-0.26915,-0.26915 -0.43621,-0.64039 -0.43621,-1.04876v-3.12814l-1.41009,-1.41009c-1.87862,-1.87862 -3.04482,-4.47043 -3.04482,-7.34154c0,-5.73941 4.65538,-10.39479 10.39479,-10.39479c2.8697,0 5.4684,1.16385 7.34967,3.04512l14.48828,14.48828c-1.19091,9.79209 -8.8151,17.59918 -18.51888,19.06757l-7.33778,-7.33778c-0.26915,-0.26915 -0.43621,-0.64039 -0.43621,-1.04876z" fill="url(#color-1)" stroke-width="1"></path>
+        <path d="M19.54509,37.36473c0,0.81673 0.66824,1.48497 1.48497,1.48497h5.93988c0.81673,0 1.48497,-0.66824 1.48497,-1.48497v-1.48497h-8.90982zM24,9.1503c-5.73941,0 -10.39479,4.65538 -10.39479,10.39479c0,3.53423 1.76711,6.64524 4.45491,8.52373v3.35603c0,0.81673 0.66824,1.48497 1.48497,1.48497h8.90982c0.81673,0 1.48497,-0.66824 1.48497,-1.48497v-3.35603c2.6878,-1.87849 4.45491,-4.9895 4.45491,-8.52373c0,-5.73941 -4.65538,-10.39479 -10.39479,-10.39479zM28.23959,25.63347l-1.26965,0.88356v3.42286h-5.93988v-3.41543l-1.26965,-0.88356c-1.99728,-1.39587 -3.18526,-3.66788 -3.18526,-6.08838c0,-4.09109 3.33376,-7.42485 7.42485,-7.42485c4.09109,0 7.42485,3.33376 7.42485,7.42485c0,2.41308 -1.18798,4.68508 -3.18526,6.08095z" fill="none" stroke-width="0"></path>
+        <path d="M19.54509,35.87976h8.90982v1.48497c0,0.81673 -0.66824,1.48497 -1.48497,1.48497h-5.93988c-0.81673,0 -1.48497,-0.66824 -1.48497,-1.48497zM34.39479,19.54509c0,3.53423 -1.76711,6.64524 -4.45491,8.52373v3.35603c0,0.81673 -0.66824,1.48497 -1.48497,1.48497h-8.90982c-0.81673,0 -1.48497,-0.66824 -1.48497,-1.48497v-3.35603c-2.6878,-1.87849 -4.45491,-4.9895 -4.45491,-8.52373c0,-5.73941 4.65538,-10.39479 10.39479,-10.39479c5.73941,0 10.39479,4.65538 10.39479,10.39479zM31.42485,19.55251c0,-4.09109 -3.33376,-7.42485 -7.42485,-7.42485c-4.09109,0 -7.42485,3.33376 -7.42485,7.42485c0,2.4205 1.18798,4.69251 3.18526,6.08838l1.26965,0.88356v3.41543h5.93988v-3.42286l1.26965,-0.88356c1.99728,-1.39587 3.18526,-3.66788 3.18526,-6.08095z" fill="#16e9ff" stroke-width="0"></path>
+        <path d="M2,24c0,-12.15026 9.84974,-22 22,-22c12.15026,0 22,9.84974 22,22c0,12.15026 -9.84974,22 -22,22c-12.15026,0 -22,-9.84974 -22,-22z" id="base 1 1 1" fill="none" stroke-width="1"></path>
+        <g fill="#000000" stroke-width="1" font-family="Roboto, sans-serif" font-weight="400" font-size="14" text-anchor="start"></g>
+        <rect x="2" y="2" width="44" height="22" fill="none" stroke-width="1"></rect>
+        <path d="M2,24v-22h44v22z" fill="none" stroke-width="1"></path>
+        <path d="M2,24v-22h44v22z" fill="none" stroke-width="1"></path>
+        <path d="M2,24v-22h44v22z" fill="none" stroke-width="1"></path>
+        <path d="M2,24v-22h44v22z" fill="none" stroke-width="1"></path>
+    </g>
+</svg>

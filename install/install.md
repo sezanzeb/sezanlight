@@ -23,7 +23,7 @@ Your raspberry
 sudo pigpiod -s 1
 git clone https://github.com/sezanzeb/sezanlight.git
 cd sezanlight
-python3 server/server.py
+python3 server/sezanlight.py
 ```
 
 Edit the config file in the repositories root if you are using gpios different from 1. or

@@ -1,19 +1,330 @@
 body {
     background: #111;
-    color: #fff;
-    font-family: sans-serif;
-    text-align: center;
-    margin: 50px;
+    margin: 0px;
+    margin-bottom: 50px;
+    font-family: 'Roboto', 'Open Sans', sans-serif, 'Arial';
+}
+
+#main {
+    background: #111;
+    color: white;
+    border-radius: 4px;
+    display: table;
+    margin: 50px auto;
+    width: 300px;
+    box-sizing: border-box;
+    font-size: 16px;
+    overflow: hidden;
 }
 
 label {
     margin-right: 10px;
+    /* make it easier touchable */
+    line-height: 30px;
+    display: inline-block;
 }
 
-input, button {
-    background: #222;
+label + input:not(input[type=checkbox]) {
+    width: 75%;
+}
+
+.center {
+    text-align: center;
+}
+
+.left {
+    text-align: left;
+}
+
+.tab {
+    display: None;
     color: white;
-    border: 1px solid black;
+}
+
+.tab.active {
+    display: block;
+}
+
+.content {
+    margin: 30px 20px;
+}
+
+#form_static input[type="range"] {
+    width: 80%;
+    border: 0px;
+}
+
+#status {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+    max-height: 50px;
+    line-height: 40px;
+    height: 41px;
+    font-size: 16px;
+    transition: max-height ease-out 0.5s;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    background: black;
+    color: white;
+}
+
+#status.hidden,
+#status:empty {
+    max-height: 0px;
+}
+
+#nav {
+    width: 100%;
+    background: #222;
+    text-align: center;
+    box-shadow: 0px 1px 1px black;
+    display: flex;
+    justify-content: space-around;
+    padding-top: 100px;
+}
+
+#nav > span {
+    cursor: pointer;
+    line-height: 44px;
+    flex: 1;
+    transition: 0.1s ease-out;
+    transition-property: background-color, color;
+    text-transform: uppercase;
+}
+
+#nav > span.active {
+    opacity: 1;
+    border-bottom: 2px solid white;
+}
+
+h2 {
+    font-size: 16px;
+    margin: 40px 0px 0px 0px;
+    line-height: 23px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.dark #nav > span.active {
+    border-color: #222;
+}
+.dark #nav > span {
+    color: #222;
+}
+
+.config-row {
+    display: flex;
+    flex-flow: row nowrap;
+    margin: 10px 0px;
+}
+
+.config-row > * {
+    margin: 0px;
+    flex: 3;
+}
+
+.config-row > label {
+    flex: 1;
+}
+
+hr {
+    border: 0px;
+    border-top: 1px solid #222;
+}
+
+.tooltip {
+    pointer-events: none;
+    position: absolute;
+    background: RGBa(0, 0, 0, 0.7);
     padding: 5px 10px;
-    border-radius: 3px;
+    border-radius: 2px;
+    margin: 5px 0px;
+    border: 1px solid #2f2f2f;
+    /*box-shadow: 0px 1px 5px black;*/
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    display: block;
+    font-size: 13px;
+    line-height: normal;
+    margin-right: 23px;
+    margin-left: 8px;
+    width: 300px;
+}
+
+.tooltip:empty, .tooltipsdisabled .tooltip {
+    display: none;
+}
+
+p:hover > span.tooltip {
+    opacity: 1;
+}
+
+small {
+    opacity: 0.3;
+    line-height: 14px;
+}
+
+#dangerous {
+    max-height: 0px;
+    overflow: hidden;
+    transition: all ease-out 0.5s;
+    margin: 0px 20px;
+}
+
+#dangerous_collapse:checked + label + #dangerous {
+    max-height: 500px;
+}
+
+.mdl-textfield__input {
+    border-color: rgba(255, 255, 255, .12);
+    display: inline-block;
+    line-height: 30px;
+    padding: 0px;
+}
+
+.relative-wrap {
+    display: inline-block;
+    position: relative;
+}
+
+.relative-wrap input + .vertical-line {
+    background: white;
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 0px;
+    height: 2px;
+    transition: all 0.2s ease-out;
+}
+
+.relative-wrap input:focus + .vertical-line {
+    left: 0px;
+    right: 0px;
+}
+
+.config-input .relative-wrap {
+    width: 100%;
+}
+
+.config-input {
+    flex: 3;
+}
+
+.config-label {
+    flex: 1;
+}
+
+* {
+    vertical-align: middle;
+    -webkit-tap-highlight-color: transparent;
+    /* hide touch highlight: */
+    background: transparent;
+}
+
+*:focus, *:active {
+    outline: 0px;
+}
+
+#dangerous_collapse {
+    cursor: pointer;
+}
+
+button {
+    border: 0px;
+    color: white;
+    text-transform: uppercase;
+    font-size: 14px;
+    background: #222;
+    border-radius: 2px;
+    line-height: 36px;
+    box-shadow: 0px 2px 2px #00000047;
+    padding: 0px 12px;
+}
+
+button + button {
+    margin-left: 15px;
+}
+
+input[type=number] {
+    color: white;
+    font-size: 16px;
+    border: 0px;
+    border-bottom: 1px solid #333;
+    line-height: 28px;
+    width: 100%;
+}
+
+input[type=range] {
+    background: transparent;
+    -webkit-appearance: none;
+}
+/* make knobs invisibly larger, so that they are easier to touch */
+input[type=range]::-moz-range-thumb {
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+input[type=range]::-ms-thumb {
+    border: 15px solid transparent;
+    border-width: 23px 15px;
+    background: transparent;
+    width: 12px;
+    height: 12px;
+    box-shadow: inset 0px 0px 0px 50px white;
+    box-sizing: content-box;
+    margin-top: -28.5px;
+    border-radius: 100%;
+}
+/* since the knob is larger, it will stop before it reaches the ends of
+the sliders visually. make the sliders appear shorter by using inset shadows
+with the background color */
+input[type=range]::-moz-range-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+input[type=range]::-ms-track {
+    box-shadow: inset 16px 0px 0px 0px #111, inset -16px 0px 0px 0px #111;
+    background: grey;
+    height: 1px;
+}
+
+@media only screen and (max-width: 959px) {
+    #main {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0px;
+        margin: 0px;
+    }
+
+    .tooltip {
+        width: auto;
+    }
 }

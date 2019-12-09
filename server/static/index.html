@@ -1,23 +1,135 @@
 <html>
     <head>
-        <title>led controller web app</title>
-        <link rel='stylesheet' type='text/css' href='style.css'>
+        <title>Sezanlight</title>
+        <meta name="description" content="Control your Sezanlight LED server from your phone">
+        <meta name="application-name" content="Sezanlight">
+
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="icon" href="icons/mipmap-xxxhdpi/ic_launcher.png">
+
+        <link rel='stylesheet' type='text/css' href='style.css'>
     </head>
     <body>
         <div id='main'>
-            <h1>LED Color</h1>
-            <p>between 0 and 255</p>
-            <form id='form'>
-                <p><label for='r'>r</label><input type='number' value=0 id='r'></p>
-                <p><label for='g'>g</label><input type='number' value=0 id='g'></p>
-                <p><label for='b'>b</label><input type='number' value=0 id='b'></p>
-                <p>
-                    <label for='correctTemp'>fix color temp:</label>
-                    <input type='checkbox' id='correctTemp'>
-                </p>
-                <p><button id='submit'>submit</button></p>
-            </form>
+            <div id='nav'>
+                <span target='color'>LED Color</span>
+                <span target='config'>Config</span>
+            </div>
+            <div class='tab' id='color'>
+                <div class='center content'>
+                    <form id='form_static'>
+                        <p>
+                            <label for='r'>r</label>
+                            <input type="range" min="0" max="255" value="0" id='r'>
+                        </p>
+                        <p>
+                            <label for='g'>g</label>
+                            <input type="range" min="0" max="255" value="0" id='g'>
+                        </p>
+                        <p>
+                            <label for='b'>b</label>
+                            <input type="range" min="0" max="255" value="0" id='b'>
+                        </p>
+                        <p><button class="">
+                            submit
+                        </button></p>
+                    </form>
+                </div>
+            </div>
+            <div class='tab' id='config'>
+                <form id='form_config' class='center'>
+                    <!--<hr />
+                    <input type='checkbox' class='mdl-checkbox__input' id='dangerous_collapse' />
+                    <label for='dangerous_collapse'>show dangerous settings</label>
+                    <div id='dangerous' class='left'>-->
+                    <div class='content'>
+                        <h2>GPIO-Pins</h2>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_r'>r</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_r' type='number' value='' id='gpio_r' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_g'>g</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_g' type='number' value='' id='gpio_g' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='gpio_b'>b</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='gpio_b' type='number' value='' id='gpio_b' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <h2>Default Color</h2>
+                        <div class='config-row left'>
+                            <label class='config-label' for='default_r'>r</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='default_r' type='number' value='' id='default_r' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='default_g'>g</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='default_g' type='number' value='' id='default_g' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class='config-row left'>
+                            <label class='config-label' for='default_b'>b</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='default_b' type='number' value='' id='default_b' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <h2>Network</h2>
+                        <div class='config-row left'>
+                            <label class='config-label' for='raspberry_port'>Port</label>
+                            <div class='config-input'>
+                                <span class='relative-wrap'>
+                                    <input name='raspberry_port' type='number' value='' id='raspberry_port' />
+                                    <span class='vertical-line'></span>
+                                </span>
+                            </div>
+                        </div>
+                        <p class='left'><small>
+                            Setting the port to restricted ports might break your server.
+                        </small></p>
+                        <!--</div><hr />-->
+                        <hr/>
+                        <p class='center'>
+                            <button id="submitconf">
+                                Submit
+                            </button>
+                            <button id="restart">
+                                Restart server
+                            </button>
+                        </p>
+                        <p class='center'><small>
+                            Restart the server afterwards
+                        </small></p>
+                    </div>
+                </form>
+            </div>
+            <div id='status' class='hidden'></div>
         </div>
     </body>
     <script src='script.js'></script>

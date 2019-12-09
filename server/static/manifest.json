@@ -1,0 +1,37 @@
+{
+    "name": "Sezanlight",
+    "theme_color": "#FFFFFF",
+    "background_color": "#460098",
+    "display": "standalone",
+    "location": "no",
+    "scope": "/",
+    "start_url": "/",
+    "description": "Control your Sezanlight LED server from your phone",
+    "icons": [
+      {
+        "src": "icons/mipmap-hdpi/ic_launcher.png",
+        "sizes": "72x72",
+        "type": "image/png"
+      },
+      {
+        "src": "icons/mipmap-xhdpi/ic_launcher.png",
+        "sizes": "96x96",
+        "type": "image/png"
+      },
+      {
+        "src": "icons/mipmap-xxhdpi/ic_launcher.png",
+        "sizes": "144x144",
+        "type": "image/png"
+      },
+      {
+        "src": "icons/mipmap-xxxhdpi/ic_launcher.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "icons/playstore/icon.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }

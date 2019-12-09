@@ -13,12 +13,12 @@ case "$1" in
 
     start)
         sudo pigpiod -s 1
-        python3 /home/pi/sezanlight/server/server.py &
+        python3 /home/pi/sezanlight/server/src/sezanlight.py &
         return 0
         ;;
 
     stop)
-        pkill -9 -f sezanlight/server/server.py
+        pkill -9 -f sezanlight/server/src/sezanlight.py
         return 0
         ;;
 

@@ -196,12 +196,12 @@ class LEDClient(Gtk.Window):
 
         self.switch.set_active(0)
         self.stop_client()
-        full_on = 20000
+        clr_range = 20000
 
         try:
-            r = int(float(self.r_entry.get_text()) * full_on / 255)
-            g = int(float(self.g_entry.get_text()) * full_on / 255)
-            b = int(float(self.b_entry.get_text()) * full_on / 255)
+            r = int(float(self.r_entry.get_text()) * clr_range / 255)
+            g = int(float(self.g_entry.get_text()) * clr_range / 255)
+            b = int(float(self.b_entry.get_text()) * clr_range / 255)
         except:
             self.alert('Number could not be read!', 'Please re-check your r, g and b input.')
             return
@@ -209,7 +209,7 @@ class LEDClient(Gtk.Window):
         config = self.read_config()
         raspberry_ip = config['raspberry_ip']
         raspberry_port = config['raspberry_port']
-        url = 'http://{}:{}/color/set/?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
+        url = 'http://{}:{}/color/set?r={}&g={}&b={}'.format(raspberry_ip, raspberry_port, r, g, b)
         try:
             # 1s timeout in a local network is more than enough
             requests.get(url, timeout=1)
