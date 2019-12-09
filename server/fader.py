@@ -3,6 +3,7 @@
 import traceback
 import time
 from threading import Thread, Semaphore
+from logger import logger
 
 import pigpio
 pi = pigpio.pi()
@@ -68,7 +69,7 @@ config = {
 
 class Fader(Thread):
 
-    def __init__(self, config_file, logger):
+    def __init__(self):
 
         self.logger = logger
 
@@ -252,7 +253,8 @@ class Fader(Thread):
                         # Overwrite globals r, g and b so that when fading restarts,
                         # that is going to be the new starting color.
                         self.current_color = [
-                            self.start_color[c] * (1 - self.fade_state) + self.target_color[c] * self.fade_state
+                            self.start_color[c] * (1 - self.fade_state) +
+                            self.target_color[c] * self.fade_state
                             for c in range(3)
                         ]
                         # print(self.fade_state, self.r_target, self.g_target, self.b_target)
